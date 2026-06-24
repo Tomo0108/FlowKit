@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FlowKit — Power Automate フロー生成",
+  title: "FlowKit",
   description:
     "Box / SharePoint の Excel シートを CSV 化して日次出力する Power Automate フローを、インポート可能な zip 形式で生成します。",
   applicationName: "FlowKit",

@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import type { FlowConfig } from "@/lib/validators";
 import { createId, sanitizeFileName } from "@/lib/utils";
+import { describeSchedule } from "@/lib/schedule";
 import {
   buildApisMap,
   buildConnectionsMap,
@@ -57,10 +58,18 @@ export function summarizeFlow(config: FlowConfig): string[] {
     lines.push(`SharePoint フォルダ: ${config.sourceSharePointFolderPath}`);
   }
 
+  const scheduleText = describeSchedule({
+    frequency: config.scheduleFrequency,
+    hour: config.scheduleHour,
+    minute: config.scheduleMinute,
+    weekdays: config.scheduleWeekdays,
+    day: config.scheduleDay,
+  });
+
   lines.push(
     `コピーするシート: ${config.sheetName}`,
     `CSV 出力先 Box フォルダ: ${config.destinationBoxFolderId}`,
-    `実行: 毎日 ${String(config.scheduleHour).padStart(2, "0")}:${String(config.scheduleMinute).padStart(2, "0")} (${config.timeZone})`,
+    `実行: ${scheduleText} (${config.timeZone})`,
   );
 
   return lines;

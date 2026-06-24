@@ -23,6 +23,8 @@ import {
   FileText,
   HelpCircle,
   Loader2,
+  Minus,
+  Plus,
   RotateCcw,
   Share2,
 } from "lucide-react";
@@ -32,6 +34,13 @@ import {
   generateFlowPackage,
   summarizeFlow,
 } from "@/lib/power-automate/generate-package";
+import { saveFlow } from "@/lib/saved-flows";
+import {
+  describeSchedule,
+  formatTime,
+  FREQUENCY_OPTIONS,
+  WEEKDAYS,
+} from "@/lib/schedule";
 import { downloadBlob } from "@/lib/utils";
 import {
   defaultFlowConfig,
@@ -64,7 +73,7 @@ const STEPS: { id: StepId; label: string; title: string; subtitle: string }[] = 
     id: "schedule",
     label: "実行時刻",
     title: "実行スケジュール",
-    subtitle: "自動バッチを実行する時刻を指定します",
+    subtitle: "自動バッチを実行する頻度と時刻を指定します",
   },
   {
     id: "review",
@@ -96,6 +105,7 @@ const TIME_ZONES = [
 function fieldsForStep(
   step: StepId,
   source: FlowConfig["dataSourceType"],
+  frequency: FlowConfig["scheduleFrequency"],
 ): (keyof FlowConfig)[] {
   switch (step) {
     case "source":
@@ -107,7 +117,9 @@ function fieldsForStep(
     case "output":
       return ["destinationBoxFolderId", "flowName"];
     case "schedule":
-      return ["scheduleHour", "scheduleMinute", "timeZone"];
+      return frequency === "week"
+        ? ["scheduleWeekdays", "scheduleHour", "scheduleMinute", "timeZone"]
+        : ["scheduleHour", "scheduleMinute", "timeZone"];
     default:
       return [];
   }
@@ -148,7 +160,10 @@ function FieldHelp({ text }: { text: string }) {
         <HelpCircle className="h-3.5 w-3.5" aria-hidden />
       </button>
       {open && (
-        <span className="help-popover animate-fade-up absolute left-0 top-6 z-30 w-60 px-3.5 py-2.5">
+        <span
+          role="tooltip"
+          className="help-popover animate-fade-up absolute left-0 top-7 z-30 block w-[min(17rem,calc(100vw-2.5rem))] px-3.5 py-2.5 break-words whitespace-normal"
+        >
           {text}
         </span>
       )}
@@ -194,8 +209,26 @@ function TimeStepper({
   onInc: () => void;
   onDec: () => void;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const incRef = useRef(onInc);
+  const decRef = useRef(onDec);
+  incRef.current = onInc;
+  decRef.current = onDec;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const handler = (event: WheelEvent) => {
+      event.preventDefault();
+      if (event.deltaY < 0) incRef.current();
+      else decRef.current();
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []);
+
   return (
-    <div className="time-field">
+    <div ref={ref} className="time-field" title="スクロールでも変更できます">
       <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </span>
@@ -224,12 +257,18 @@ const reviewSteps = [
   { icon: Box, label: "ソースから Excel を取得" },
   { icon: FileSpreadsheet, label: "指定シートをコピーして CSV 化" },
   { icon: FileText, label: "CSV を Box フォルダへ配置" },
-  { icon: Clock, label: "毎日定刻に自動実行" },
+  { icon: Clock, label: "設定したスケジュールで自動実行" },
 ];
 
-export function FlowWizard() {
+export function FlowWizard({
+  initialConfig,
+}: {
+  initialConfig?: FlowConfig;
+}) {
   const [stepIndex, setStepIndex] = useState(0);
-  const [maxReached, setMaxReached] = useState(0);
+  const [maxReached, setMaxReached] = useState(
+    initialConfig ? STEPS.length - 1 : 0,
+  );
   const [direction, setDirection] = useState<"next" | "back">("next");
   const [isExporting, setIsExporting] = useState(false);
   const [exportedFile, setExportedFile] = useState<string | null>(null);
@@ -237,7 +276,7 @@ export function FlowWizard() {
 
   const form = useForm<FlowConfig>({
     resolver: zodResolver(flowConfigSchema),
-    defaultValues: defaultFlowConfig,
+    defaultValues: initialConfig ?? defaultFlowConfig,
     mode: "onChange",
   });
 
@@ -247,6 +286,17 @@ export function FlowWizard() {
 
   const hour = Number(values.scheduleHour) || 0;
   const minute = Number(values.scheduleMinute) || 0;
+  const day = Number(values.scheduleDay) || 1;
+  const weekdays = values.scheduleWeekdays ?? [];
+
+  const scheduleText = describeSchedule({
+    frequency: values.scheduleFrequency,
+    hour,
+    minute,
+    weekdays,
+    day,
+  });
+  const scheduleLabel = scheduleText.replace(` ${formatTime(hour, minute)}`, "");
 
   function fieldError(name: keyof FlowConfig) {
     const message = form.formState.errors[name]?.message;
@@ -265,14 +315,27 @@ export function FlowWizard() {
     });
   }
 
+  function setDay(next: number) {
+    form.setValue("scheduleDay", ((((next - 1) % 31) + 31) % 31) + 1, {
+      shouldValidate: true,
+    });
+  }
+
   function setTime(h: number, m: number) {
     setHour(h);
     setMinute(m);
   }
 
+  function toggleWeekday(value: string) {
+    const next = weekdays.includes(value)
+      ? weekdays.filter((d) => d !== value)
+      : [...weekdays, value];
+    form.setValue("scheduleWeekdays", next, { shouldValidate: true });
+  }
+
   async function goNext() {
     const valid = await form.trigger(
-      fieldsForStep(step.id, values.dataSourceType),
+      fieldsForStep(step.id, values.dataSourceType, values.scheduleFrequency),
     );
     if (!valid) return;
     const next = Math.min(stepIndex + 1, STEPS.length - 1);
@@ -301,8 +364,10 @@ export function FlowWizard() {
 
     setIsExporting(true);
     try {
-      const { blob, fileName } = await generateFlowPackage(form.getValues());
+      const config = form.getValues();
+      const { blob, fileName } = await generateFlowPackage(config);
       downloadBlob(blob, fileName);
+      saveFlow(config);
       setExportedFile(fileName);
     } catch {
       setExportError("zip の生成に失敗しました。入力内容をご確認ください。");
@@ -530,8 +595,10 @@ export function FlowWizard() {
 
           {step.id === "schedule" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-center gap-3 rounded-2xl border border-[var(--brand-ring)] bg-[var(--brand-softer)] px-6 py-5">
-                <Clock className="h-5 w-5 text-[var(--brand)]" aria-hidden />
+              <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-[var(--brand-ring)] bg-[var(--brand-softer)] px-6 py-5">
+                <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">
+                  {scheduleLabel}
+                </span>
                 <div className="time-display">
                   <span className="time-display-value">
                     {String(hour).padStart(2, "0")}
@@ -541,8 +608,76 @@ export function FlowWizard() {
                     {String(minute).padStart(2, "0")}
                   </span>
                 </div>
-                <span className="text-sm text-muted-foreground">毎日</span>
               </div>
+
+              <Field label="実行頻度">
+                <div className="segment">
+                  {FREQUENCY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      data-active={values.scheduleFrequency === opt.value}
+                      className="segment-item"
+                      onClick={() =>
+                        form.setValue("scheduleFrequency", opt.value, {
+                          shouldValidate: true,
+                        })
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              {values.scheduleFrequency === "week" && (
+                <Field
+                  label="実行する曜日"
+                  error={fieldError("scheduleWeekdays")}
+                >
+                  <div className="flex flex-wrap gap-2">
+                    {WEEKDAYS.map((d) => (
+                      <button
+                        key={d.value}
+                        type="button"
+                        className="preset-chip w-10 !px-0 text-center"
+                        data-active={weekdays.includes(d.value)}
+                        onClick={() => toggleWeekday(d.value)}
+                        aria-pressed={weekdays.includes(d.value)}
+                      >
+                        {d.short}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+              )}
+
+              {values.scheduleFrequency === "month" && (
+                <Field
+                  label="実行日"
+                  help="毎月この日に実行します。31日を指定した場合、月末で調整されます。"
+                >
+                  <div className="flex items-center justify-center gap-4 rounded-xl border border-border bg-card py-3">
+                    <button
+                      type="button"
+                      className="step-btn"
+                      onClick={() => setDay(day - 1)}
+                      aria-label="日を減らす"
+                    >
+                      <Minus className="h-4 w-4" aria-hidden />
+                    </button>
+                    <span className="time-field-value !text-2xl">{day}日</span>
+                    <button
+                      type="button"
+                      className="step-btn"
+                      onClick={() => setDay(day + 1)}
+                      aria-label="日を増やす"
+                    >
+                      <Plus className="h-4 w-4" aria-hidden />
+                    </button>
+                  </div>
+                </Field>
+              )}
 
               <div>
                 <p className="field-label mb-2">よく使う時刻</p>
@@ -557,8 +692,7 @@ export function FlowWizard() {
                         data-active={active}
                         onClick={() => setTime(preset.h, preset.m)}
                       >
-                        {String(preset.h).padStart(2, "0")}:
-                        {String(preset.m).padStart(2, "0")}
+                        {formatTime(preset.h, preset.m)}
                       </button>
                     );
                   })}
@@ -618,6 +752,9 @@ export function FlowWizard() {
                   <p className="mono text-sm text-muted-foreground">
                     {exportedFile}
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    この設定は「保存済み」に自動保存されました
+                  </p>
                 </div>
                 <div className="flex flex-col gap-2.5 sm:flex-row">
                   <Button onClick={onExport} variant="outline">
@@ -661,7 +798,7 @@ export function FlowWizard() {
                       const Icon = rs.icon;
                       const label =
                         index === reviewSteps.length - 1
-                          ? `毎日 ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} に自動実行`
+                          ? `${scheduleText} に自動実行`
                           : rs.label;
                       return (
                         <li key={rs.label} className="flex items-center gap-3">
@@ -687,14 +824,14 @@ export function FlowWizard() {
         {/* Footer navigation */}
         {!(isLast && exportedFile) && (
           <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-6">
-            <Button
-              variant="ghost"
-              onClick={goBack}
-              disabled={stepIndex === 0 || isExporting}
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden />
-              戻る
-            </Button>
+            {stepIndex === 0 ? (
+              <span aria-hidden />
+            ) : (
+              <Button variant="ghost" onClick={goBack} disabled={isExporting}>
+                <ArrowLeft className="h-4 w-4" aria-hidden />
+                戻る
+              </Button>
+            )}
 
             {isLast ? (
               <Button onClick={onExport} disabled={isExporting} size="lg">

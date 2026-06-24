@@ -1,4 +1,5 @@
 import type { FlowConfig } from "@/lib/validators";
+import { WEEKDAY_VALUES } from "@/lib/schedule";
 
 const SCHEMA =
   "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#";
@@ -23,6 +24,43 @@ function openApiAction(
       parameters,
       authentication: "@parameters('$authentication')",
     },
+  };
+}
+
+function buildRecurrence(config: FlowConfig) {
+  const schedule: Record<string, unknown> = {
+    hours: [String(config.scheduleHour)],
+    minutes: [config.scheduleMinute],
+  };
+
+  let frequency: "Day" | "Week" | "Month" = "Day";
+
+  switch (config.scheduleFrequency) {
+    case "weekday":
+      frequency = "Week";
+      schedule.weekDays = WEEKDAY_VALUES;
+      break;
+    case "week":
+      frequency = "Week";
+      schedule.weekDays =
+        config.scheduleWeekdays && config.scheduleWeekdays.length > 0
+          ? config.scheduleWeekdays
+          : WEEKDAY_VALUES;
+      break;
+    case "month":
+      frequency = "Month";
+      break;
+    case "day":
+    default:
+      frequency = "Day";
+      break;
+  }
+
+  return {
+    frequency,
+    interval: 1,
+    schedule,
+    timeZone: config.timeZone,
   };
 }
 
@@ -179,16 +217,8 @@ export function buildWorkflowDefinition(config: FlowConfig) {
       $authentication: { defaultValue: {}, type: "SecureObject" },
     },
     triggers: {
-      Daily_batch_at_scheduled_time: {
-        recurrence: {
-          frequency: "Day",
-          interval: 1,
-          schedule: {
-            hours: [String(config.scheduleHour)],
-            minutes: [config.scheduleMinute],
-          },
-          timeZone: config.timeZone,
-        },
+      Scheduled_batch: {
+        recurrence: buildRecurrence(config),
         metadata: { operationMetadataId: metadataId() },
         type: "Recurrence",
       },

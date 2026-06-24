@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { AccentSwitcher } from "@/components/accent-switcher";
 import { cn } from "@/lib/utils";
 
-export type AppView = "create" | "help";
+export type AppView = "create" | "saved" | "help";
 
 const navItems: { id: AppView; label: string }[] = [
   { id: "create", label: "フロー作成" },
+  { id: "saved", label: "保存済み" },
   { id: "help", label: "使用方法" },
 ];
 

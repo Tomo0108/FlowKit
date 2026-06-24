@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "FlowKit — Power Automate フロー生成",
+    name: "FlowKit",
     short_name: "FlowKit",
     description:
       "Box / SharePoint の Excel シートを CSV 化して日次出力する Power Automate フローを生成します。",

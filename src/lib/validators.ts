@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FLOW_TEMPLATE } from "@/lib/flow-template";
+import { scheduleFrequencies } from "@/lib/schedule";
 
 export const dataSourceTypes = ["box", "sharepoint"] as const;
 
@@ -25,11 +26,25 @@ export const flowConfigSchema = z
       .min(1, "CSV 出力先の Box フォルダ ID を入力してください"),
     csvFileNamePrefix: z.string().max(50).optional(),
     oneDriveTempFolder: z.string().max(200).optional(),
+    scheduleFrequency: z.enum(scheduleFrequencies),
+    scheduleWeekdays: z.array(z.string()).optional(),
+    scheduleDay: z.coerce.number().int().min(1).max(31),
     scheduleHour: z.coerce.number().int().min(0).max(23),
     scheduleMinute: z.coerce.number().int().min(0).max(59),
     timeZone: z.string().min(1, "タイムゾーンを入力してください"),
   })
   .superRefine((value, ctx) => {
+    if (
+      value.scheduleFrequency === "week" &&
+      (!value.scheduleWeekdays || value.scheduleWeekdays.length === 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "実行する曜日を1つ以上選択してください",
+        path: ["scheduleWeekdays"],
+      });
+    }
+
     if (value.dataSourceType === "box" && !value.sourceBoxFolderId?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -76,6 +91,9 @@ export const defaultFlowConfig: FlowConfig = {
   destinationBoxFolderId: "",
   csvFileNamePrefix: "export",
   oneDriveTempFolder: "/FlowKit/temp",
+  scheduleFrequency: "day",
+  scheduleWeekdays: ["Monday"],
+  scheduleDay: 1,
   scheduleHour: FLOW_TEMPLATE.defaultSchedule.hour,
   scheduleMinute: FLOW_TEMPLATE.defaultSchedule.minute,
   timeZone: FLOW_TEMPLATE.defaultSchedule.timeZone,
