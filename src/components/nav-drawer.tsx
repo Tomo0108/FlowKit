@@ -9,19 +9,36 @@ export type AppView = "create" | "help";
 
 const navItems: { id: AppView; label: string }[] = [
   { id: "create", label: "フロー作成" },
-  { id: "help", label: "ヘルプ" },
+  { id: "help", label: "使用方法" },
 ];
+
+function BrandGlyph({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+      >
+        <path d="M7.8 12 16 6.6" />
+        <path d="M7.8 12 16 17.4" />
+      </g>
+      <circle cx="6.2" cy="12" r="2.3" fill="currentColor" />
+      <circle cx="17.4" cy="6" r="2.3" fill="currentColor" />
+      <circle cx="17.4" cy="18" r="2.3" fill="currentColor" />
+    </svg>
+  );
+}
 
 function BrandMark() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="brand-mark">
-        <span className="text-[0.6875rem] font-bold tracking-tight text-[var(--brand-foreground)]">
-          F
-        </span>
+      <span className="brand-mark text-[var(--brand-foreground)]">
+        <BrandGlyph className="h-[1.05rem] w-[1.05rem]" />
       </span>
       <span className="text-[0.9375rem] font-semibold tracking-tight">
-        FlowKit
+        Flow<span className="text-[var(--brand)]">Kit</span>
       </span>
     </div>
   );

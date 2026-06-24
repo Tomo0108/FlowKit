@@ -1,6 +1,12 @@
 "use client";
 
-import { Fragment, type ReactNode, useState } from "react";
+import {
+  Fragment,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -9,10 +15,13 @@ import {
   Box,
   Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Download,
   FileSpreadsheet,
   FileText,
+  HelpCircle,
   Loader2,
   RotateCcw,
   Share2,
@@ -53,7 +62,7 @@ const STEPS: { id: StepId; label: string; title: string; subtitle: string }[] = 
   },
   {
     id: "schedule",
-    label: "スケジュール",
+    label: "実行時刻",
     title: "実行スケジュール",
     subtitle: "自動バッチを実行する時刻を指定します",
   },
@@ -63,6 +72,25 @@ const STEPS: { id: StepId; label: string; title: string; subtitle: string }[] = 
     title: "内容を確認して出力",
     subtitle: "設定を確認し、インポート用 zip を生成します",
   },
+];
+
+const TIME_PRESETS = [
+  { h: 9, m: 0 },
+  { h: 10, m: 0 },
+  { h: 12, m: 0 },
+  { h: 18, m: 0 },
+];
+
+const TIME_ZONES = [
+  { value: "Tokyo Standard Time", label: "(UTC+09:00) 東京・大阪" },
+  { value: "Korea Standard Time", label: "(UTC+09:00) ソウル" },
+  { value: "China Standard Time", label: "(UTC+08:00) 北京" },
+  { value: "Singapore Standard Time", label: "(UTC+08:00) シンガポール" },
+  { value: "W. Europe Standard Time", label: "(UTC+01:00) 中央ヨーロッパ" },
+  { value: "GMT Standard Time", label: "(UTC+00:00) ロンドン" },
+  { value: "UTC", label: "(UTC+00:00) UTC" },
+  { value: "Eastern Standard Time", label: "(UTC-05:00) 米国東部" },
+  { value: "Pacific Standard Time", label: "(UTC-08:00) 米国太平洋" },
 ];
 
 function fieldsForStep(
@@ -85,27 +113,109 @@ function fieldsForStep(
   }
 }
 
+function FieldHelp({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClick(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <span ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        className="help-dot"
+        data-open={open}
+        aria-label="この項目の説明"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <HelpCircle className="h-3.5 w-3.5" aria-hidden />
+      </button>
+      {open && (
+        <span className="help-popover animate-fade-up absolute left-0 top-6 z-30 w-60 px-3.5 py-2.5">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function Field({
   label,
   htmlFor,
-  hint,
+  help,
   error,
   children,
 }: {
   label: string;
   htmlFor?: string;
-  hint?: string;
+  help?: string;
   error?: string | null;
   children: ReactNode;
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={htmlFor} className="field-label">
-        {label}
-      </label>
+      <div className="flex items-center gap-1.5">
+        <label htmlFor={htmlFor} className="field-label">
+          {label}
+        </label>
+        {help && <FieldHelp text={help} />}
+      </div>
       {children}
-      {hint && !error && <p className="field-hint">{hint}</p>}
       {error && <p className="field-error">{error}</p>}
+    </div>
+  );
+}
+
+function TimeStepper({
+  label,
+  value,
+  onInc,
+  onDec,
+}: {
+  label: string;
+  value: number;
+  onInc: () => void;
+  onDec: () => void;
+}) {
+  return (
+    <div className="time-field">
+      <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </span>
+      <button
+        type="button"
+        className="step-btn"
+        onClick={onInc}
+        aria-label={`${label}を増やす`}
+      >
+        <ChevronUp className="h-4 w-4" aria-hidden />
+      </button>
+      <span className="time-field-value">{String(value).padStart(2, "0")}</span>
+      <button
+        type="button"
+        className="step-btn"
+        onClick={onDec}
+        aria-label={`${label}を減らす`}
+      >
+        <ChevronDown className="h-4 w-4" aria-hidden />
+      </button>
     </div>
   );
 }
@@ -119,6 +229,8 @@ const reviewSteps = [
 
 export function FlowWizard() {
   const [stepIndex, setStepIndex] = useState(0);
+  const [maxReached, setMaxReached] = useState(0);
+  const [direction, setDirection] = useState<"next" | "back">("next");
   const [isExporting, setIsExporting] = useState(false);
   const [exportedFile, setExportedFile] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -133,9 +245,29 @@ export function FlowWizard() {
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
 
+  const hour = Number(values.scheduleHour) || 0;
+  const minute = Number(values.scheduleMinute) || 0;
+
   function fieldError(name: keyof FlowConfig) {
     const message = form.formState.errors[name]?.message;
     return message ? String(message) : null;
+  }
+
+  function setHour(next: number) {
+    form.setValue("scheduleHour", ((next % 24) + 24) % 24, {
+      shouldValidate: true,
+    });
+  }
+
+  function setMinute(next: number) {
+    form.setValue("scheduleMinute", ((next % 60) + 60) % 60, {
+      shouldValidate: true,
+    });
+  }
+
+  function setTime(h: number, m: number) {
+    setHour(h);
+    setMinute(m);
   }
 
   async function goNext() {
@@ -143,12 +275,23 @@ export function FlowWizard() {
       fieldsForStep(step.id, values.dataSourceType),
     );
     if (!valid) return;
-    setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
+    const next = Math.min(stepIndex + 1, STEPS.length - 1);
+    setDirection("next");
+    setStepIndex(next);
+    setMaxReached((m) => Math.max(m, next));
   }
 
   function goBack() {
     setExportError(null);
+    setDirection("back");
     setStepIndex((i) => Math.max(i - 1, 0));
+  }
+
+  function goTo(index: number) {
+    if (index === stepIndex || index > maxReached) return;
+    setExportError(null);
+    setDirection(index > stepIndex ? "next" : "back");
+    setStepIndex(index);
   }
 
   async function onExport() {
@@ -172,8 +315,13 @@ export function FlowWizard() {
     form.reset(defaultFlowConfig);
     setExportedFile(null);
     setExportError(null);
+    setMaxReached(0);
+    setDirection("back");
     setStepIndex(0);
   }
+
+  const animClass =
+    direction === "next" ? "animate-slide-next" : "animate-slide-back";
 
   return (
     <div className="space-y-7">
@@ -182,16 +330,25 @@ export function FlowWizard() {
         {STEPS.map((s, index) => {
           const state =
             index < stepIndex ? "done" : index === stepIndex ? "active" : "todo";
+          const clickable = index <= maxReached && index !== stepIndex;
           return (
             <Fragment key={s.id}>
               <li className="flex flex-col items-center gap-2">
-                <span className="step-bubble" data-state={state}>
+                <button
+                  type="button"
+                  className="step-bubble"
+                  data-state={state}
+                  onClick={() => goTo(index)}
+                  disabled={!clickable}
+                  aria-label={`${s.label}へ移動`}
+                  style={{ cursor: clickable ? "pointer" : "default" }}
+                >
                   {state === "done" ? (
                     <Check className="h-4 w-4" aria-hidden />
                   ) : (
                     index + 1
                   )}
-                </span>
+                </button>
                 <span
                   className="step-caption hidden sm:block"
                   data-state={state}
@@ -223,7 +380,7 @@ export function FlowWizard() {
           <p className="mt-1 text-sm text-muted-foreground">{step.subtitle}</p>
         </header>
 
-        <div key={step.id} className="animate-step-in">
+        <div key={step.id} className={animClass}>
           {step.id === "source" && (
             <div className="space-y-6">
               <Field label="Excel ファイルの場所">
@@ -261,7 +418,7 @@ export function FlowWizard() {
                 <Field
                   label="Box フォルダ ID"
                   htmlFor="sourceBoxFolderId"
-                  hint="Excel ファイルが格納されているフォルダの ID"
+                  help="Excel ファイルが格納されている Box フォルダの ID です。フォルダを開いた際の URL 末尾の数字で確認できます。"
                   error={fieldError("sourceBoxFolderId")}
                 >
                   <Input
@@ -276,6 +433,7 @@ export function FlowWizard() {
                   <Field
                     label="SharePoint サイト URL"
                     htmlFor="sourceSharePointSiteUrl"
+                    help="対象 SharePoint サイトの URL です。例: https://contoso.sharepoint.com/sites/example"
                     error={fieldError("sourceSharePointSiteUrl")}
                   >
                     <Input
@@ -288,6 +446,7 @@ export function FlowWizard() {
                   <Field
                     label="フォルダパス"
                     htmlFor="sourceSharePointFolderPath"
+                    help="サイト内の Excel ファイルがあるフォルダのパスです。例: Shared Documents/Reports"
                     error={fieldError("sourceSharePointFolderPath")}
                   >
                     <Input
@@ -306,7 +465,7 @@ export function FlowWizard() {
             <Field
               label="コピーするシート名"
               htmlFor="sheetName"
-              hint="この Excel シートを CSV に変換します"
+              help="CSV に変換する Excel シートの名前です。シート見出しと完全に一致させてください。"
               error={fieldError("sheetName")}
             >
               <Input
@@ -322,7 +481,7 @@ export function FlowWizard() {
               <Field
                 label="CSV 出力先 Box フォルダ ID"
                 htmlFor="destinationBoxFolderId"
-                hint="生成した CSV を配置する Box フォルダ"
+                help="生成した CSV を配置する Box フォルダの ID です。"
                 error={fieldError("destinationBoxFolderId")}
               >
                 <Input
@@ -335,7 +494,7 @@ export function FlowWizard() {
               <Field
                 label="ファイル名プレフィックス"
                 htmlFor="csvFileNamePrefix"
-                hint="例: export → export_20260624.csv"
+                help="出力ファイル名の先頭に付く文字列です。例: export → export_20260624.csv"
               >
                 <Input
                   id="csvFileNamePrefix"
@@ -348,7 +507,7 @@ export function FlowWizard() {
                 <Field
                   label="OneDrive 一時フォルダ"
                   htmlFor="oneDriveTempFolder"
-                  hint="Box ソース時の Excel 処理に使用します"
+                  help="Box ソース時に Excel を一時処理するための OneDrive フォルダです。"
                 >
                   <Input
                     id="oneDriveTempFolder"
@@ -361,6 +520,7 @@ export function FlowWizard() {
               <Field
                 label="Power Automate フロー名"
                 htmlFor="flowName"
+                help="Power Automate 上に表示されるフローの名前です。"
                 error={fieldError("flowName")}
               >
                 <Input id="flowName" {...form.register("flowName")} />
@@ -370,55 +530,77 @@ export function FlowWizard() {
 
           {step.id === "schedule" && (
             <div className="space-y-6">
-              <div className="rounded-2xl border border-[var(--brand-ring)] bg-[var(--brand-softer)] px-6 py-5">
-                <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">
-                  自動バッチ
-                </p>
-                <div className="time-display mt-3">
+              <div className="flex items-center justify-center gap-3 rounded-2xl border border-[var(--brand-ring)] bg-[var(--brand-softer)] px-6 py-5">
+                <Clock className="h-5 w-5 text-[var(--brand)]" aria-hidden />
+                <div className="time-display">
                   <span className="time-display-value">
-                    {String(values.scheduleHour).padStart(2, "0")}
+                    {String(hour).padStart(2, "0")}
                   </span>
                   <span className="time-display-value">:</span>
                   <span className="time-display-value">
-                    {String(values.scheduleMinute).padStart(2, "0")}
-                  </span>
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    毎日実行
+                    {String(minute).padStart(2, "0")}
                   </span>
                 </div>
+                <span className="text-sm text-muted-foreground">毎日</span>
               </div>
+
+              <div>
+                <p className="field-label mb-2">よく使う時刻</p>
+                <div className="flex flex-wrap gap-2">
+                  {TIME_PRESETS.map((preset) => {
+                    const active = hour === preset.h && minute === preset.m;
+                    return (
+                      <button
+                        key={`${preset.h}-${preset.m}`}
+                        type="button"
+                        className="preset-chip"
+                        data-active={active}
+                        onClick={() => setTime(preset.h, preset.m)}
+                      >
+                        {String(preset.h).padStart(2, "0")}:
+                        {String(preset.m).padStart(2, "0")}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <Field label="時" htmlFor="scheduleHour" error={fieldError("scheduleHour")}>
-                  <Input
-                    id="scheduleHour"
-                    className="mono"
-                    type="number"
-                    min={0}
-                    max={23}
-                    {...form.register("scheduleHour")}
-                  />
-                </Field>
-                <Field
+                <TimeStepper
+                  label="時"
+                  value={hour}
+                  onInc={() => setHour(hour + 1)}
+                  onDec={() => setHour(hour - 1)}
+                />
+                <TimeStepper
                   label="分"
-                  htmlFor="scheduleMinute"
-                  error={fieldError("scheduleMinute")}
-                >
-                  <Input
-                    id="scheduleMinute"
-                    className="mono"
-                    type="number"
-                    min={0}
-                    max={59}
-                    {...form.register("scheduleMinute")}
-                  />
-                </Field>
+                  value={minute}
+                  onInc={() => setMinute(minute - (minute % 5) + 5)}
+                  onDec={() =>
+                    setMinute(
+                      minute % 5 === 0 ? minute - 5 : minute - (minute % 5),
+                    )
+                  }
+                />
               </div>
+
               <Field
                 label="タイムゾーン"
                 htmlFor="timeZone"
+                help="フローを実行する基準のタイムゾーンです。日本国内のみなら東京を選択します。"
                 error={fieldError("timeZone")}
               >
-                <Input id="timeZone" {...form.register("timeZone")} />
+                <select
+                  id="timeZone"
+                  className="tz-select"
+                  {...form.register("timeZone")}
+                >
+                  {TIME_ZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
               </Field>
             </div>
           )}
@@ -479,7 +661,7 @@ export function FlowWizard() {
                       const Icon = rs.icon;
                       const label =
                         index === reviewSteps.length - 1
-                          ? `毎日 ${String(values.scheduleHour).padStart(2, "0")}:${String(values.scheduleMinute).padStart(2, "0")} に自動実行`
+                          ? `毎日 ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} に自動実行`
                           : rs.label;
                       return (
                         <li key={rs.label} className="flex items-center gap-3">

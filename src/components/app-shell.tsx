@@ -13,8 +13,8 @@ const viewHeadings: Record<AppView, { title: string; subtitle: string }> = {
     subtitle: "Box / SharePoint の Excel シートを CSV 化して日次出力",
   },
   help: {
-    title: "ヘルプ",
-    subtitle: "使い方とインポート手順",
+    title: "使用方法",
+    subtitle: "設定の流れとインポート手順",
   },
 };
 
@@ -39,24 +39,24 @@ function Shell() {
       />
 
       <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-        <header className="mb-9 animate-fade-up">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
-            {heading.title}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">{heading.subtitle}</p>
-        </header>
+        <div key={view} className="animate-view">
+          <header className="mb-9">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+              {heading.title}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {heading.subtitle}
+            </p>
+          </header>
 
-        {view === "create" && (
-          <div className="animate-fade-up [animation-delay:60ms]">
-            <FlowWizard />
-          </div>
-        )}
+          {view === "create" && <FlowWizard />}
 
-        {view === "help" && (
-          <Surface className="animate-fade-up [animation-delay:60ms]">
-            <HelpContent />
-          </Surface>
-        )}
+          {view === "help" && (
+            <Surface>
+              <HelpContent />
+            </Surface>
+          )}
+        </div>
       </main>
     </div>
   );
