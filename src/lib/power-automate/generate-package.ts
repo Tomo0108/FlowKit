@@ -52,10 +52,10 @@ export function summarizeFlow(config: FlowConfig): string[] {
   const lines = [`フロー名: ${config.flowName}`];
 
   if (config.dataSourceType === "box") {
-    lines.push(`Excel ソース Box フォルダ: ${config.sourceBoxFolderId}`);
+    lines.push(`ソース: Box フォルダ ${config.sourceBoxFolderId}`);
   } else {
-    lines.push(`Excel ソース SharePoint: ${config.sourceSharePointSiteUrl}`);
-    lines.push(`SharePoint フォルダ: ${config.sourceSharePointFolderPath}`);
+    lines.push(`ソース: SharePoint ${config.sourceSharePointSiteUrl}`);
+    lines.push(`フォルダ: ${config.sourceSharePointFolderPath}`);
   }
 
   const scheduleText = describeSchedule({
@@ -67,8 +67,8 @@ export function summarizeFlow(config: FlowConfig): string[] {
   });
 
   lines.push(
-    `コピーするシート: ${config.sheetName}`,
-    `CSV 出力先 Box フォルダ: ${config.destinationBoxFolderId}`,
+    `シート: ${config.sheetName}`,
+    `出力先: Box フォルダ ${config.destinationBoxFolderId}`,
     `実行: ${scheduleText} (${config.timeZone})`,
   );
 

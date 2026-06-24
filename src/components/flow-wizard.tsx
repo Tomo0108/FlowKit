@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -385,8 +386,40 @@ export function FlowWizard({
     setStepIndex(0);
   }
 
-  const animClass =
-    direction === "next" ? "animate-slide-next" : "animate-slide-back";
+  const spring = { type: "spring" as const, stiffness: 320, damping: 34, mass: 0.85 };
+
+  const headerVariants = {
+    initial: (dir: "next" | "back") => ({
+      opacity: 0,
+      x: dir === "next" ? 18 : -18,
+    }),
+    animate: { opacity: 1, x: 0, transition: spring },
+    exit: (dir: "next" | "back") => ({
+      opacity: 0,
+      x: dir === "next" ? -14 : 14,
+      transition: { duration: 0.2, ease: [0.4, 0, 1, 1] as const },
+    }),
+  };
+
+  const contentVariants = {
+    initial: (dir: "next" | "back") => ({
+      opacity: 0,
+      x: dir === "next" ? 48 : -48,
+      filter: "blur(4px)",
+    }),
+    animate: {
+      opacity: 1,
+      x: 0,
+      filter: "blur(0px)",
+      transition: spring,
+    },
+    exit: (dir: "next" | "back") => ({
+      opacity: 0,
+      x: dir === "next" ? -36 : 36,
+      filter: "blur(4px)",
+      transition: { duration: 0.22, ease: [0.4, 0, 1, 1] as const },
+    }),
+  };
 
   return (
     <div className="space-y-7">
@@ -435,17 +468,35 @@ export function FlowWizard({
 
       {/* Step card */}
       <div className="surface p-6 sm:p-8">
-        <header className="mb-6">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
-            Step {stepIndex + 1} / {STEPS.length}
-          </p>
-          <h2 className="mt-1.5 text-lg font-semibold tracking-tight text-foreground">
-            {step.title}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{step.subtitle}</p>
-        </header>
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
+          <motion.header
+            key={step.id}
+            custom={direction}
+            variants={headerVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="mb-6"
+          >
+            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
+              Step {stepIndex + 1} / {STEPS.length}
+            </p>
+            <h2 className="mt-1.5 text-lg font-semibold tracking-tight text-foreground">
+              {step.title}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">{step.subtitle}</p>
+          </motion.header>
+        </AnimatePresence>
 
-        <div key={step.id} className={animClass}>
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
+          <motion.div
+            key={step.id}
+            custom={direction}
+            variants={contentVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
           {step.id === "source" && (
             <div className="space-y-6">
               <Field label="Excel ファイルの場所">
@@ -776,13 +827,13 @@ export function FlowWizard({
                     return (
                       <div
                         key={line}
-                        className="grid grid-cols-[7.5rem_1fr] gap-3 px-4 py-3"
+                        className="grid grid-cols-[4.5rem_1fr] gap-3 px-4 py-3"
                         style={{
                           borderTop:
                             index === 0 ? undefined : "1px solid var(--border)",
                         }}
                       >
-                        <dt className="summary-key">{term}</dt>
+                        <dt className="summary-key whitespace-nowrap">{term}</dt>
                         <dd className="summary-value mono">{value}</dd>
                       </div>
                     );
@@ -819,7 +870,8 @@ export function FlowWizard({
                 )}
               </div>
             ))}
-        </div>
+          </motion.div>
+        </AnimatePresence>
 
         {/* Footer navigation */}
         {!(isLast && exportedFile) && (
