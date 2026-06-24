@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { AccentSwitcher } from "@/components/accent-switcher";
 import { cn } from "@/lib/utils";
 
-export type AppView = "create" | "preview" | "help";
+export type AppView = "create" | "help";
 
 const navItems: { id: AppView; label: string }[] = [
   { id: "create", label: "フロー作成" },
-  { id: "preview", label: "確認" },
   { id: "help", label: "ヘルプ" },
 ];
 
@@ -17,7 +16,7 @@ function BrandMark() {
   return (
     <div className="flex items-center gap-2.5">
       <span className="brand-mark">
-        <span className="text-[0.6875rem] font-bold tracking-tight text-[var(--accent-foreground)]">
+        <span className="text-[0.6875rem] font-bold tracking-tight text-[var(--brand-foreground)]">
           F
         </span>
       </span>
@@ -78,7 +77,7 @@ export function NavDrawer({
                 className={cn(
                   "w-full rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
                   currentView === item.id
-                    ? "bg-[var(--accent-soft)] font-medium text-[var(--accent)]"
+                    ? "bg-[var(--brand-soft)] font-medium text-[var(--brand)]"
                     : "text-foreground/70 hover:bg-muted hover:text-foreground",
                 )}
               >

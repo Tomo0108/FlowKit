@@ -41,7 +41,7 @@ export function AccentSwitcher() {
         <Palette className="h-3.5 w-3.5" aria-hidden />
         <span
           className="h-3.5 w-3.5 rounded-full ring-1 ring-inset ring-black/10"
-          style={{ background: "var(--accent)" }}
+          style={{ background: "var(--brand)" }}
         />
       </button>
 
@@ -68,7 +68,7 @@ export function AccentSwitcher() {
                       ? "border-foreground/20 shadow-sm"
                       : "border-transparent hover:border-border",
                   )}
-                  style={{ background: item.vars["--accent-soft"] }}
+                  style={{ background: item.vars["--brand-soft"] }}
                 >
                   <span
                     className="flex h-6 w-6 items-center justify-center rounded-full ring-1 ring-inset ring-black/10"
@@ -77,7 +77,7 @@ export function AccentSwitcher() {
                     {active && (
                       <Check
                         className="h-3.5 w-3.5"
-                        style={{ color: item.vars["--accent-foreground"] }}
+                        style={{ color: item.vars["--brand-foreground"] }}
                         aria-hidden
                       />
                     )}
