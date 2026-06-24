@@ -1,6 +1,7 @@
 "use client";
 
 import type { FlowConfig } from "@/lib/validators";
+import { WORKFLOW_STEPS } from "@/lib/flow-template";
 
 type FlowPreviewProps = {
   config: FlowConfig;
@@ -8,12 +9,15 @@ type FlowPreviewProps = {
 };
 
 export function FlowPreview({ config, summary }: FlowPreviewProps) {
-  const hasInput = config.flowName.trim().length > 0;
+  const ready =
+    config.sourceBoxFolderId?.trim() ||
+    (config.sourceSharePointSiteUrl?.trim() &&
+      config.sourceSharePointFolderPath?.trim());
 
-  if (!hasInput) {
+  if (!ready || !config.sheetName.trim() || !config.destinationBoxFolderId.trim()) {
     return (
       <p className="py-12 text-center text-sm text-muted-foreground">
-        フロー作成タブで設定を入力してください
+        ソース・シート・出力先を入力してください
       </p>
     );
   }
@@ -22,7 +26,10 @@ export function FlowPreview({ config, summary }: FlowPreviewProps) {
     <div className="space-y-6">
       <ul className="space-y-2 text-sm">
         {summary.map((line) => (
-          <li key={line} className="flex gap-3 border-b border-border/60 pb-2 last:border-0">
+          <li
+            key={line}
+            className="flex gap-3 border-b border-border/60 pb-2 last:border-0"
+          >
             <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
             <span>{line}</span>
           </li>
@@ -30,29 +37,16 @@ export function FlowPreview({ config, summary }: FlowPreviewProps) {
       </ul>
 
       <ol className="space-y-3 text-sm text-muted-foreground">
-        <li className="flex gap-3">
-          <span className="w-5 shrink-0 tabular-nums">1.</span>
-          <span>
-            毎日 {String(config.scheduleHour).padStart(2, "0")}:
-            {String(config.scheduleMinute).padStart(2, "0")} に起動
-          </span>
-        </li>
-        <li className="flex gap-3">
-          <span className="w-5 shrink-0 tabular-nums">2.</span>
-          <span>
-            {config.dataSourceType === "box"
-              ? "Box フォルダ内の Excel を取得"
-              : "SharePoint フォルダ内の Excel を取得"}
-          </span>
-        </li>
-        <li className="flex gap-3">
-          <span className="w-5 shrink-0 tabular-nums">3.</span>
-          <span>シート「{config.sheetName}」を CSV 化</span>
-        </li>
-        <li className="flex gap-3">
-          <span className="w-5 shrink-0 tabular-nums">4.</span>
-          <span>Box フォルダへ CSV を配置</span>
-        </li>
+        {WORKFLOW_STEPS.map((step) => (
+          <li key={step.id} className="flex gap-3">
+            <span className="w-5 shrink-0 tabular-nums">{step.id}.</span>
+            <span>
+              {step.id === 4
+                ? `毎日 ${String(config.scheduleHour).padStart(2, "0")}:${String(config.scheduleMinute).padStart(2, "0")} に自動実行`
+                : step.label}
+            </span>
+          </li>
+        ))}
       </ol>
     </div>
   );

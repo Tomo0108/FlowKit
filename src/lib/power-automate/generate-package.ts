@@ -48,22 +48,19 @@ export async function generateFlowPackage(config: FlowConfig): Promise<{
 }
 
 export function summarizeFlow(config: FlowConfig): string[] {
-  const lines = [
-    `フロー名: ${config.flowName}`,
-    `データ元: ${config.dataSourceType === "box" ? "Box" : "SharePoint"}`,
-  ];
+  const lines = [`フロー名: ${config.flowName}`];
 
   if (config.dataSourceType === "box") {
-    lines.push(`ソース Box フォルダ ID: ${config.sourceBoxFolderId}`);
+    lines.push(`Excel ソース Box フォルダ: ${config.sourceBoxFolderId}`);
   } else {
-    lines.push(`SharePoint サイト: ${config.sourceSharePointSiteUrl}`);
+    lines.push(`Excel ソース SharePoint: ${config.sourceSharePointSiteUrl}`);
     lines.push(`SharePoint フォルダ: ${config.sourceSharePointFolderPath}`);
   }
 
   lines.push(
-    `対象シート: ${config.sheetName}`,
-    `CSV 出力先 Box フォルダ ID: ${config.destinationBoxFolderId}`,
-    `スケジュール: 毎日 ${String(config.scheduleHour).padStart(2, "0")}:${String(config.scheduleMinute).padStart(2, "0")} (${config.timeZone})`,
+    `コピーするシート: ${config.sheetName}`,
+    `CSV 出力先 Box フォルダ: ${config.destinationBoxFolderId}`,
+    `実行: 毎日 ${String(config.scheduleHour).padStart(2, "0")}:${String(config.scheduleMinute).padStart(2, "0")} (${config.timeZone})`,
   );
 
   return lines;

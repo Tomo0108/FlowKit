@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FLOW_TEMPLATE } from "@/lib/flow-template";
 
 export const dataSourceTypes = ["box", "sharepoint"] as const;
 
@@ -13,16 +14,17 @@ export const flowConfigSchema = z
     description: z.string().max(500).optional(),
     dataSourceType: z.enum(dataSourceTypes),
     sourceBoxFolderId: z.string().optional(),
-    sourceSharePointSiteUrl: z.string().url("有効な URL を入力してください").optional(),
+    sourceSharePointSiteUrl: z.string().optional(),
     sourceSharePointFolderPath: z.string().optional(),
     sheetName: z
       .string()
-      .min(1, "シート名を入力してください")
+      .min(1, "コピーするシート名を入力してください")
       .max(100, "シート名は100文字以内にしてください"),
     destinationBoxFolderId: z
       .string()
       .min(1, "CSV 出力先の Box フォルダ ID を入力してください"),
     csvFileNamePrefix: z.string().max(50).optional(),
+    oneDriveTempFolder: z.string().max(200).optional(),
     scheduleHour: z.coerce.number().int().min(0).max(23),
     scheduleMinute: z.coerce.number().int().min(0).max(59),
     timeZone: z.string().min(1, "タイムゾーンを入力してください"),
@@ -31,16 +33,23 @@ export const flowConfigSchema = z
     if (value.dataSourceType === "box" && !value.sourceBoxFolderId?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Box フォルダ ID を入力してください",
+        message: "Excel ファイルがある Box フォルダ ID を入力してください",
         path: ["sourceBoxFolderId"],
       });
     }
 
     if (value.dataSourceType === "sharepoint") {
-      if (!value.sourceSharePointSiteUrl?.trim()) {
+      const siteUrl = value.sourceSharePointSiteUrl?.trim() ?? "";
+      if (!siteUrl) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "SharePoint サイト URL を入力してください",
+          path: ["sourceSharePointSiteUrl"],
+        });
+      } else if (!z.string().url().safeParse(siteUrl).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "有効な URL を入力してください",
           path: ["sourceSharePointSiteUrl"],
         });
       }
@@ -57,7 +66,7 @@ export const flowConfigSchema = z
 export type FlowConfig = z.infer<typeof flowConfigSchema>;
 
 export const defaultFlowConfig: FlowConfig = {
-  flowName: "",
+  flowName: FLOW_TEMPLATE.defaultFlowName,
   description: "",
   dataSourceType: "box",
   sourceBoxFolderId: "",
@@ -66,7 +75,8 @@ export const defaultFlowConfig: FlowConfig = {
   sheetName: "",
   destinationBoxFolderId: "",
   csvFileNamePrefix: "export",
-  scheduleHour: 10,
-  scheduleMinute: 0,
-  timeZone: "Tokyo Standard Time",
+  oneDriveTempFolder: "/FlowKit/temp",
+  scheduleHour: FLOW_TEMPLATE.defaultSchedule.hour,
+  scheduleMinute: FLOW_TEMPLATE.defaultSchedule.minute,
+  timeZone: FLOW_TEMPLATE.defaultSchedule.timeZone,
 };

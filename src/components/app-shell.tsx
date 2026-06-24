@@ -24,7 +24,7 @@ import {
 export function AppShell() {
   const [view, setView] = useState<AppView>("create");
   const [navOpen, setNavOpen] = useState(false);
-  const [formTab, setFormTab] = useState("basic");
+  const [formTab, setFormTab] = useState("source");
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ export function AppShell() {
     const valid = await form.trigger();
     if (!valid) {
       setView("create");
-      setFormTab("basic");
+      setFormTab("source");
       return;
     }
 

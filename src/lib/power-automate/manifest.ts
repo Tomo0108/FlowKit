@@ -37,17 +37,28 @@ function buildApiResource(displayName: string, apiName: string): ApiResource {
   };
 }
 
-export function buildRootManifest(config: FlowConfig, flowId: string) {
-  const connectionIds = {
+function buildConnectionIds(flowId: string, config: FlowConfig) {
+  const ids = {
     box: `${flowId}-conn-box`,
     excel: `${flowId}-conn-excel`,
     sharepoint: `${flowId}-conn-sharepoint`,
+    onedrive: `${flowId}-conn-onedrive`,
   };
 
-  const dependsOn = [connectionIds.box, connectionIds.excel];
-  if (config.dataSourceType === "sharepoint") {
-    dependsOn.push(connectionIds.sharepoint);
+  const dependsOn = [ids.box, ids.excel];
+
+  if (config.dataSourceType === "box") {
+    dependsOn.push(ids.onedrive);
   }
+  if (config.dataSourceType === "sharepoint") {
+    dependsOn.push(ids.sharepoint);
+  }
+
+  return { ids, dependsOn };
+}
+
+export function buildRootManifest(config: FlowConfig, flowId: string) {
+  const { ids, dependsOn } = buildConnectionIds(flowId, config);
 
   const resources: Record<string, object> = {
     [flowId]: {
@@ -61,15 +72,22 @@ export function buildRootManifest(config: FlowConfig, flowId: string) {
       configurableBy: "User",
       dependsOn,
     },
-    [connectionIds.box]: buildApiResource("Box", "shared_box"),
-    [connectionIds.excel]: buildApiResource(
+    [ids.box]: buildApiResource("Box", "shared_box"),
+    [ids.excel]: buildApiResource(
       "Excel Online (Business)",
       "shared_excelonlinebusiness",
     ),
   };
 
+  if (config.dataSourceType === "box") {
+    resources[ids.onedrive] = buildApiResource(
+      "OneDrive for Business",
+      "shared_onedriveforbusiness",
+    );
+  }
+
   if (config.dataSourceType === "sharepoint") {
-    resources[connectionIds.sharepoint] = buildApiResource(
+    resources[ids.sharepoint] = buildApiResource(
       "SharePoint",
       "shared_sharepointonline",
     );
@@ -82,7 +100,7 @@ export function buildRootManifest(config: FlowConfig, flowId: string) {
       displayName: config.flowName.trim(),
       description:
         config.description?.trim() ||
-        "FlowKit generated: Excel sheet to CSV batch export to Box",
+        "Box フォルダ内 Excel の指定シートを CSV 化して Box へ日次出力",
       createdTime: new Date().toISOString(),
       creator: "FlowKit",
       sourceEnvironment: "",
@@ -102,6 +120,11 @@ export function buildApisMap(config: FlowConfig) {
       "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
   };
 
+  if (config.dataSourceType === "box") {
+    map.shared_onedriveforbusiness =
+      "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness";
+  }
+
   if (config.dataSourceType === "sharepoint") {
     map.shared_sharepointonline =
       "/providers/Microsoft.PowerApps/apis/shared_sharepointonline";
@@ -115,6 +138,10 @@ export function buildConnectionsMap(config: FlowConfig) {
     shared_box: "shared_box",
     shared_excelonlinebusiness: "shared_excelonlinebusiness",
   };
+
+  if (config.dataSourceType === "box") {
+    map.shared_onedriveforbusiness = "shared_onedriveforbusiness";
+  }
 
   if (config.dataSourceType === "sharepoint") {
     map.shared_sharepointonline = "shared_sharepointonline";

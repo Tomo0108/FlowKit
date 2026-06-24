@@ -7,103 +7,169 @@ function metadataId(): string {
   return crypto.randomUUID();
 }
 
+function openApiAction(
+  connectionName: string,
+  apiId: string,
+  operationId: string,
+  parameters: Record<string, unknown>,
+  runAfter: Record<string, string[]> = {},
+) {
+  return {
+    runAfter,
+    metadata: { operationMetadataId: metadataId() },
+    type: "OpenApiConnection",
+    inputs: {
+      host: { apiId, connectionName, operationId },
+      parameters,
+      authentication: "@parameters('$authentication')",
+    },
+  };
+}
+
+function excelExtensionCondition(fileNameExpression: string) {
+  return {
+    or: [".xlsx", ".xlsm", ".xls"].map((ext) => ({
+      endsWith: [`@toLower(${fileNameExpression})`, ext],
+    })),
+  };
+}
+
+function buildCsvUploadAction(config: FlowConfig, csvPrefix: string, runAfter: Record<string, string[]>) {
+  return {
+    Upload_CSV_to_Box: openApiAction(
+      "shared_box",
+      "/providers/Microsoft.PowerApps/apis/shared_box",
+      "CreateFile",
+      {
+        folderId: config.destinationBoxFolderId.trim(),
+        name: `@concat('${csvPrefix}_', ${config.dataSourceType === "box" ? "items('Apply_to_each_file')?['name']" : "items('Apply_to_each_file')?['Name']"}, '_', '${config.sheetName.trim()}', '_', formatDateTime(utcNow(), 'yyyyMMdd_HHmmss'), '.csv')`,
+        content: "@body('Convert_sheet_to_CSV')",
+      },
+      runAfter,
+    ),
+  };
+}
+
+function buildSheetToCsvAction(
+  config: FlowConfig,
+  excelSource: "onedrive" | "sharepoint",
+  runAfter: Record<string, string[]>,
+) {
+  const sheetName = config.sheetName.trim();
+  const excelParams =
+    excelSource === "onedrive"
+      ? {
+          source: "OneDrive for Business",
+          file: "@outputs('Save_to_OneDrive_for_processing')?['body/Id']",
+          scriptSource: "Library",
+          ScriptParameters: {
+            sheetName,
+          },
+        }
+      : {
+          source: "SharePoint",
+          dataset: config.sourceSharePointSiteUrl!.trim(),
+          file: "@items('Apply_to_each_file')?['Id']",
+          scriptSource: "Library",
+          ScriptParameters: {
+            sheetName,
+          },
+        };
+
+  return {
+    Convert_sheet_to_CSV: openApiAction(
+      "shared_excelonlinebusiness",
+      "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+      "RunScript",
+      excelParams,
+      runAfter,
+    ),
+  };
+}
+
+function buildBoxSourceProcessing(config: FlowConfig, csvPrefix: string) {
+  const tempFolder = config.oneDriveTempFolder?.trim() || "/FlowKit/temp";
+
+  return {
+    Get_Excel_from_Box: openApiAction(
+      "shared_box",
+      "/providers/Microsoft.PowerApps/apis/shared_box",
+      "GetFileContent",
+      { id: "@items('Apply_to_each_file')?['id']" },
+    ),
+    Save_to_OneDrive_for_processing: openApiAction(
+      "shared_onedriveforbusiness",
+      "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+      "CreateFile",
+      {
+        folderPath: tempFolder,
+        name: "@items('Apply_to_each_file')?['name']",
+        fileContent: "@body('Get_Excel_from_Box')",
+      },
+      { Get_Excel_from_Box: ["Succeeded"] },
+    ),
+    ...buildSheetToCsvAction(config, "onedrive", {
+      Save_to_OneDrive_for_processing: ["Succeeded"],
+    }),
+    ...buildCsvUploadAction(config, csvPrefix, {
+      Convert_sheet_to_CSV: ["Succeeded"],
+    }),
+    Delete_OneDrive_temp_file: openApiAction(
+      "shared_onedriveforbusiness",
+      "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+      "DeleteFile",
+      {
+        id: "@outputs('Save_to_OneDrive_for_processing')?['body/Id']",
+      },
+      { Upload_CSV_to_Box: ["Succeeded"] },
+    ),
+  };
+}
+
+function buildSharePointSourceProcessing(config: FlowConfig, csvPrefix: string) {
+  return {
+    ...buildSheetToCsvAction(config, "sharepoint", {}),
+    ...buildCsvUploadAction(config, csvPrefix, {
+      Convert_sheet_to_CSV: ["Succeeded"],
+    }),
+  };
+}
+
 export function buildWorkflowDefinition(config: FlowConfig) {
   const isBox = config.dataSourceType === "box";
   const csvPrefix = config.csvFileNamePrefix?.trim() || "export";
-  const foreachExpression = isBox
-    ? "@outputs('List_source_files')?['body/entries']"
-    : "@outputs('List_source_files')?['body/value']";
+  const fileNameExpr = isBox
+    ? "items('Apply_to_each_file')?['name']"
+    : "items('Apply_to_each_file')?['Name']";
 
   const listSourceAction = isBox
     ? {
-        List_source_files: {
-          runAfter: {},
-          metadata: { operationMetadataId: metadataId() },
-          type: "OpenApiConnection",
-          inputs: {
-            host: {
-              apiId: "/providers/Microsoft.PowerApps/apis/shared_box",
-              connectionName: "shared_box",
-              operationId: "ListFolderItemsById",
-            },
-            parameters: {
-              id: config.sourceBoxFolderId!.trim(),
-            },
-            authentication: "@parameters('$authentication')",
-          },
-        },
+        List_Excel_files_in_Box_folder: openApiAction(
+          "shared_box",
+          "/providers/Microsoft.PowerApps/apis/shared_box",
+          "ListFolderItemsById",
+          { id: config.sourceBoxFolderId!.trim() },
+        ),
       }
     : {
-        List_source_files: {
-          runAfter: {},
-          metadata: { operationMetadataId: metadataId() },
-          type: "OpenApiConnection",
-          inputs: {
-            host: {
-              apiId: "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-              connectionName: "shared_sharepointonline",
-              operationId: "ListFolder",
-            },
-            parameters: {
-              dataset: config.sourceSharePointSiteUrl!.trim(),
-              id: config.sourceSharePointFolderPath!.trim(),
-            },
-            authentication: "@parameters('$authentication')",
+        List_Excel_files_in_SharePoint_folder: openApiAction(
+          "shared_sharepointonline",
+          "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+          "ListFolder",
+          {
+            dataset: config.sourceSharePointSiteUrl!.trim(),
+            id: config.sourceSharePointFolderPath!.trim(),
           },
-        },
+        ),
       };
 
-  const getFileContentAction = isBox
-    ? {
-        Get_file_content: {
-          runAfter: {},
-          metadata: { operationMetadataId: metadataId() },
-          type: "OpenApiConnection",
-          inputs: {
-            host: {
-              apiId: "/providers/Microsoft.PowerApps/apis/shared_box",
-              connectionName: "shared_box",
-              operationId: "GetFileContent",
-            },
-            parameters: {
-              id: "@items('Apply_to_each_file')?['Id']",
-            },
-            authentication: "@parameters('$authentication')",
-          },
-        },
-      }
-    : {
-        Get_file_content: {
-          runAfter: {},
-          metadata: { operationMetadataId: metadataId() },
-          type: "OpenApiConnection",
-          inputs: {
-            host: {
-              apiId: "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-              connectionName: "shared_sharepointonline",
-              operationId: "GetFileContent",
-            },
-            parameters: {
-              dataset: config.sourceSharePointSiteUrl!.trim(),
-              id: "@items('Apply_to_each_file')?['Id']",
-              inferContentType: true,
-            },
-            authentication: "@parameters('$authentication')",
-          },
-        },
-      };
+  const listActionKey = isBox
+    ? "List_Excel_files_in_Box_folder"
+    : "List_Excel_files_in_SharePoint_folder";
 
-  const excelLocation = isBox
-    ? {
-        source: "Box",
-        drive: "@items('Apply_to_each_file')?['ParentFolderId']",
-        file: "@items('Apply_to_each_file')?['Id']",
-      }
-    : {
-        source: "SharePoint",
-        dataset: config.sourceSharePointSiteUrl!.trim(),
-        id: "@items('Apply_to_each_file')?['Id']",
-      };
+  const foreachExpression = isBox
+    ? "@outputs('List_Excel_files_in_Box_folder')?['body/entries']"
+    : "@outputs('List_Excel_files_in_SharePoint_folder')?['body/value']";
 
   return {
     $schema: SCHEMA,
@@ -113,7 +179,7 @@ export function buildWorkflowDefinition(config: FlowConfig) {
       $authentication: { defaultValue: {}, type: "SecureObject" },
     },
     triggers: {
-      Recurrence: {
+      Daily_batch_at_scheduled_time: {
         recurrence: {
           frequency: "Day",
           interval: 1,
@@ -132,83 +198,17 @@ export function buildWorkflowDefinition(config: FlowConfig) {
       Apply_to_each_file: {
         foreach: foreachExpression,
         actions: {
-          Condition_is_Excel: {
-            actions: {
-              ...getFileContentAction,
-              List_rows_in_sheet: {
-                runAfter: { Get_file_content: ["Succeeded"] },
-                metadata: { operationMetadataId: metadataId() },
-                type: "OpenApiConnection",
-                inputs: {
-                  host: {
-                    apiId:
-                      "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
-                    connectionName: "shared_excelonlinebusiness",
-                    operationId: "GetAllRows",
-                  },
-                  parameters: {
-                    source: excelLocation.source,
-                    ...(isBox
-                      ? {
-                          drive: excelLocation.drive,
-                          file: excelLocation.file,
-                        }
-                      : {
-                          dataset: excelLocation.dataset,
-                          id: excelLocation.id,
-                        }),
-                    table: config.sheetName.trim(),
-                  },
-                  authentication: "@parameters('$authentication')",
-                },
-              },
-              Create_CSV_table: {
-                runAfter: { List_rows_in_sheet: ["Succeeded"] },
-                metadata: { operationMetadataId: metadataId() },
-                type: "Table",
-                inputs: {
-                  from: "@outputs('List_rows_in_sheet')?['body/value']",
-                  format: "CSV",
-                },
-              },
-              Upload_CSV_to_Box: {
-                runAfter: { Create_CSV_table: ["Succeeded"] },
-                metadata: { operationMetadataId: metadataId() },
-                type: "OpenApiConnection",
-                inputs: {
-                  host: {
-                    apiId: "/providers/Microsoft.PowerApps/apis/shared_box",
-                    connectionName: "shared_box",
-                    operationId: "CreateFile",
-                  },
-                  parameters: {
-                    folderId: config.destinationBoxFolderId.trim(),
-                    name: `@concat('${csvPrefix}_', items('Apply_to_each_file')?['Name'], '_', '${config.sheetName.trim()}', '_', formatDateTime(utcNow(), 'yyyyMMdd_HHmmss'), '.csv')`,
-                    content: "@body('Create_CSV_table')",
-                  },
-                  authentication: "@parameters('$authentication')",
-                },
-              },
-            },
+          If_file_is_Excel: {
+            actions: isBox
+              ? buildBoxSourceProcessing(config, csvPrefix)
+              : buildSharePointSourceProcessing(config, csvPrefix),
             runAfter: {},
             else: { actions: {} },
-            expression: {
-              or: [
-                {
-                  endsWith: ["@items('Apply_to_each_file')?['Name']", ".xlsx"],
-                },
-                {
-                  endsWith: ["@items('Apply_to_each_file')?['Name']", ".xlsm"],
-                },
-                {
-                  endsWith: ["@items('Apply_to_each_file')?['Name']", ".xls"],
-                },
-              ],
-            },
+            expression: excelExtensionCondition(fileNameExpr),
             type: "If",
           },
         },
-        runAfter: { List_source_files: ["Succeeded"] },
+        runAfter: { [listActionKey]: ["Succeeded"] },
         metadata: { operationMetadataId: metadataId() },
         type: "Foreach",
       },
@@ -231,6 +231,15 @@ export function buildConnectionReferences(config: FlowConfig) {
       tier: "NotSpecified",
     },
   };
+
+  if (config.dataSourceType === "box") {
+    refs.shared_onedriveforbusiness = {
+      connectionName: "shared_onedriveforbusiness",
+      source: "Embedded",
+      id: "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+      tier: "NotSpecified",
+    };
+  }
 
   if (config.dataSourceType === "sharepoint") {
     refs.shared_sharepointonline = {
@@ -263,7 +272,6 @@ export function buildFlowDefinitionFile(config: FlowConfig, flowId: string) {
           { type: "OpenApiConnection" },
           { type: "Foreach" },
           { type: "If" },
-          { type: "Table" },
         ],
       },
     },
