@@ -1,42 +1,31 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import {
+  BookOpen,
+  FolderOpen,
+  Menu,
+  Plus,
+  Workflow,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SettingsButton } from "@/components/settings-sheet";
 import { cn } from "@/lib/utils";
 
 export type AppView = "create" | "saved" | "help";
 
-const navItems: { id: AppView; label: string }[] = [
-  { id: "create", label: "フロー作成" },
-  { id: "saved", label: "保存済み" },
-  { id: "help", label: "使用方法" },
+const navItems: { id: AppView; label: string; icon: LucideIcon }[] = [
+  { id: "create", label: "フロー作成", icon: Plus },
+  { id: "saved", label: "保存済み", icon: FolderOpen },
+  { id: "help", label: "使用方法", icon: BookOpen },
 ];
-
-function BrandGlyph({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <g
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-      >
-        <path d="M7.8 12 16 6.6" />
-        <path d="M7.8 12 16 17.4" />
-      </g>
-      <circle cx="6.2" cy="12" r="2.3" fill="currentColor" />
-      <circle cx="17.4" cy="6" r="2.3" fill="currentColor" />
-      <circle cx="17.4" cy="18" r="2.3" fill="currentColor" />
-    </svg>
-  );
-}
 
 function BrandMark() {
   return (
     <div className="flex items-center gap-2.5">
       <span className="brand-mark text-[var(--brand-foreground)]">
-        <BrandGlyph className="h-[1.05rem] w-[1.05rem]" />
+        <Workflow className="h-[1.1rem] w-[1.1rem]" aria-hidden />
       </span>
       <span className="brand-wordmark">
         Flow<span className="brand-wordmark-accent">Kit</span>
@@ -87,28 +76,40 @@ export function NavDrawer({
           </Button>
         </div>
         <ul className="flex flex-col gap-0.5 px-3">
-          {navItems.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => handleNavigate(item.id)}
-                className={cn(
-                  "w-full rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
-                  currentView === item.id
-                    ? "bg-[var(--brand-soft)] font-medium text-[var(--brand)]"
-                    : "text-foreground/70 hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate(item.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+                    currentView === item.id
+                      ? "bg-[var(--brand-soft)] font-medium text-[var(--brand)]"
+                      : "text-foreground/70 hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            );
+          })}
+          <li>
+            <SettingsButton
+              onOpen={onClose}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+              iconClassName="h-4 w-4"
+            >
+              設定
+            </SettingsButton>
+          </li>
         </ul>
         <div className="mt-auto border-t border-border px-5 py-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">表示設定</span>
-            <SettingsButton />
-          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            表示や文字サイズは「設定」から変更できます。
+          </p>
         </div>
       </nav>
     </>
@@ -128,23 +129,27 @@ export function HeaderBar({ currentView, onMenuOpen, onNavigate }: HeaderBarProp
         <BrandMark />
 
         <nav className="hidden items-center gap-7 md:flex">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onNavigate(item.id)}
-              data-active={currentView === item.id}
-              className="nav-link"
-            >
-              {item.label}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onNavigate(item.id)}
+                data-active={currentView === item.id}
+                className="nav-link"
+              >
+                <Icon className="h-4 w-4" aria-hidden />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+          <SettingsButton className="nav-link" iconClassName="h-4 w-4">
+            設定
+          </SettingsButton>
         </nav>
 
         <div className="flex items-center gap-2">
-          <div className="hidden md:block">
-            <SettingsButton />
-          </div>
           <Button
             variant="outline"
             size="icon"

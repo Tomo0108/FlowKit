@@ -12,45 +12,79 @@ import { useCompactMotion } from "@/lib/use-compact-motion";
 import type { FlowConfig } from "@/lib/validators";
 
 const compactTransition = {
-  duration: 0.2,
+  duration: 0.28,
   ease: [0.22, 1, 0.36, 1] as const,
+};
+
+const compactExitTransition = {
+  duration: 0.18,
+  ease: [0.4, 0, 1, 1] as const,
+};
+
+const viewOrder: Record<AppView, number> = {
+  create: 0,
+  saved: 1,
+  help: 2,
 };
 
 const viewContainer = (compact: boolean) => ({
   initial: {},
   animate: {
     transition: compact
-      ? { duration: 0.01 }
+      ? { staggerChildren: 0.04, delayChildren: 0.02 }
       : { staggerChildren: 0.07, delayChildren: 0.04 },
   },
   exit: {
     transition: compact
-      ? { duration: 0.01 }
+      ? { staggerChildren: 0.03, staggerDirection: -1 }
       : { staggerChildren: 0.04, staggerDirection: -1 },
   },
 });
 
 const viewLayer = (offset: number, compact: boolean) => ({
-  initial: {
-    opacity: 0,
-    y: compact ? Math.min(offset, 8) : offset,
-    filter: compact ? "none" : "blur(6px)",
+  initial: (direction: number) => {
+    if (compact) {
+      return {
+        opacity: 0,
+        x: direction * Math.min(offset, 24),
+        scale: 0.985,
+        filter: "none",
+      };
+    }
+
+    return {
+      opacity: 0,
+      y: offset,
+      filter: "blur(6px)",
+    };
   },
   animate: {
     opacity: 1,
+    x: 0,
     y: 0,
+    scale: 1,
     filter: "none",
     transition: compact
       ? compactTransition
       : { type: "spring" as const, stiffness: 280, damping: 32 },
   },
-  exit: {
-    opacity: 0,
-    y: compact ? -Math.min(offset, 6) : -offset * 0.6,
-    filter: compact ? "none" : "blur(6px)",
-    transition: compact
-      ? { duration: 0.16, ease: [0.4, 0, 1, 1] as const }
-      : { duration: 0.2, ease: [0.4, 0, 1, 1] as const },
+  exit: (direction: number) => {
+    if (compact) {
+      return {
+        opacity: 0,
+        x: direction * -Math.min(offset, 18),
+        scale: 0.99,
+        filter: "none",
+        transition: compactExitTransition,
+      };
+    }
+
+    return {
+      opacity: 0,
+      y: -offset * 0.6,
+      filter: "blur(6px)",
+      transition: { duration: 0.2, ease: [0.4, 0, 1, 1] as const },
+    };
   },
 });
 
@@ -71,6 +105,7 @@ const viewHeadings: Record<AppView, { title: string; subtitle: string }> = {
 
 function Shell() {
   const [view, setView] = useState<AppView>("create");
+  const [transitionDirection, setTransitionDirection] = useState(1);
   const [navOpen, setNavOpen] = useState(false);
   const [loadedConfig, setLoadedConfig] = useState<FlowConfig | undefined>();
   const [wizardKey, setWizardKey] = useState(0);
@@ -78,21 +113,29 @@ function Shell() {
 
   const heading = viewHeadings[view];
 
+  function setDirectedView(next: AppView) {
+    if (next === view) return;
+    setTransitionDirection(viewOrder[next] > viewOrder[view] ? 1 : -1);
+    setView(next);
+  }
+
   function startNew() {
     setLoadedConfig(undefined);
     setWizardKey((k) => k + 1);
+    setTransitionDirection(viewOrder.create > viewOrder[view] ? 1 : -1);
     setView("create");
   }
 
   function loadFlow(config: FlowConfig) {
     setLoadedConfig(config);
     setWizardKey((k) => k + 1);
+    setTransitionDirection(viewOrder.create > viewOrder[view] ? 1 : -1);
     setView("create");
   }
 
   function navigate(next: AppView) {
     if (next === "create" && view !== "create") startNew();
-    else setView(next);
+    else setDirectedView(next);
   }
 
   return (
@@ -110,16 +153,22 @@ function Shell() {
       />
 
       <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence
+          mode="wait"
+          initial={false}
+          custom={transitionDirection}
+        >
           <motion.div
             key={view}
             variants={viewContainer(compactMotion)}
+            custom={transitionDirection}
             initial="initial"
             animate="animate"
             exit="exit"
           >
             <motion.header
               variants={viewLayer(26, compactMotion)}
+              custom={transitionDirection}
               className="mb-9"
               data-compact-motion={compactMotion ? "true" : undefined}
             >
@@ -133,6 +182,7 @@ function Shell() {
 
             <motion.div
               variants={viewLayer(14, compactMotion)}
+              custom={transitionDirection}
               data-compact-motion={compactMotion ? "true" : undefined}
             >
               {view === "create" && (

@@ -64,7 +64,19 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function SettingsButton() {
+type SettingsButtonProps = {
+  className?: string;
+  iconClassName?: string;
+  children?: React.ReactNode;
+  onOpen?: () => void;
+};
+
+export function SettingsButton({
+  className,
+  iconClassName,
+  children,
+  onOpen,
+}: SettingsButtonProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const {
@@ -88,6 +100,8 @@ export function SettingsButton() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  const hasLabel = Boolean(children);
 
   const sheet = (
     <>
@@ -245,11 +259,20 @@ export function SettingsButton() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          onOpen?.();
+          setOpen(true);
+        }}
         aria-label="設定を開く"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground transition-colors hover:text-foreground"
+        className={cn(
+          hasLabel
+            ? "inline-flex items-center gap-2 text-sm transition-colors"
+            : "flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground transition-colors hover:text-foreground",
+          className,
+        )}
       >
-        <Settings2 className="h-4 w-4" aria-hidden />
+        <Settings2 className={cn("h-4 w-4", iconClassName)} aria-hidden />
+        {children}
       </button>
       {mounted ? createPortal(sheet, document.body) : null}
     </>
