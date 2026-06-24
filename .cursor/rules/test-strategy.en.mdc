@@ -1,0 +1,52 @@
+---
+description: Test design, implementation, and coverage policy
+globs: "**/*.{test,spec}.{ts,tsx,js,jsx},**/__tests__/**/*,**/tests/**/*"
+alwaysApply: false
+---
+
+# Test Strategy
+
+## Test perspective table
+
+Before writing or updating tests, create a table with equivalence partitioning and boundary values.
+
+| Perspective | Input example | Expected result |
+|-------------|---------------|-----------------|
+| Happy path | | |
+| Error path | | |
+| Boundary | empty / max length / zero items | |
+
+## Given / When / Then
+
+Every test case must include:
+
+```typescript
+// Given: preconditions
+// When:  action under test
+// Then:  expected outcome
+it('...', () => { ... });
+```
+
+## Verification policy
+
+- Cover both **happy path** and **error path**
+- Assert exceptions (`throws` / `rejects`) and error UI where applicable
+- Mock external I/O (API, files, time) only; avoid over-mocking internals
+
+## Coverage
+
+- Add tests for new logic
+- Example coverage command (adapt to project):
+
+```bash
+# npm test -- --coverage
+# pnpm test --coverage
+```
+
+- Do not write tests whose only purpose is bumping coverage numbers
+
+## Prohibited
+
+- Tests that mirror implementation without meaningful assertions
+- Omitting Given/When/Then comments
+- Flaky tests (arbitrary sleep, unmocked `Date.now`, etc.)

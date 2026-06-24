@@ -1,0 +1,61 @@
+---
+description: Commit message format (prefix / summary / body)
+alwaysApply: false
+---
+
+# Commit Message Convention
+
+`language = "en"`
+
+## Basic Format
+
+```
+<Prefix>: <one-line summary>
+
+- Change 1
+- Change 2
+```
+
+- **Summary line is required, single line, ~50 characters max**
+- Add bullet body only when there are multiple independent changes
+- Small single-purpose changes may use the summary line alone
+
+## Prefix List
+
+| Prefix | Use |
+|--------|-----|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `refactor` | Refactoring without behavior change |
+| `test` | Test additions or updates |
+| `docs` | Documentation only |
+| `chore` | Build, config, dependencies |
+| `ci` | CI configuration |
+| `style` | Formatting / lint (no behavior change) |
+| `perf` | Performance improvement |
+
+## Generation Rules
+
+1. Always inspect **uncommitted diff** (`git diff` / `git status`) before writing
+2. Summary must clearly state **what** changed and **why**
+3. Body bullets group changes by **meaningful unit**, not by file
+
+## Prohibited
+
+- Vague summaries: `update`, `fix bug`, `WIP`
+- Messages unrelated to the diff
+- Commits with meaningless-only changes (format-only, import reorder, etc.)
+- Emojis
+
+## Examples
+
+```
+feat: add Box folder picker UI
+
+- Implement data source type selector
+- Add folder path validation
+```
+
+```
+fix: show error when CSV output folder is empty
+```
