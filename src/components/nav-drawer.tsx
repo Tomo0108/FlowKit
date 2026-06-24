@@ -2,7 +2,7 @@
 
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AccentSwitcher } from "@/components/accent-switcher";
+import { SettingsButton } from "@/components/settings-sheet";
 import { cn } from "@/lib/utils";
 
 export type AppView = "create" | "saved" | "help";
@@ -106,8 +106,8 @@ export function NavDrawer({
         </ul>
         <div className="mt-auto border-t border-border px-5 py-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">テーマ</span>
-            <AccentSwitcher />
+            <span className="text-xs text-muted-foreground">表示設定</span>
+            <SettingsButton />
           </div>
         </div>
       </nav>
@@ -143,7 +143,7 @@ export function HeaderBar({ currentView, onMenuOpen, onNavigate }: HeaderBarProp
 
         <div className="flex items-center gap-2">
           <div className="hidden md:block">
-            <AccentSwitcher />
+            <SettingsButton />
           </div>
           <Button
             variant="outline"

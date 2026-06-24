@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Zen_Kaku_Gothic_New } from "next/font/google";
+import {
+  Inter,
+  JetBrains_Mono,
+  Noto_Sans_JP,
+  Zen_Kaku_Gothic_New,
+  Zen_Maru_Gothic,
+} from "next/font/google";
 import { PWARegister } from "@/components/pwa-register";
 import "./globals.css";
 
@@ -12,7 +18,21 @@ const inter = Inter({
 const zenKaku = Zen_Kaku_Gothic_New({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
-  variable: "--font-jp",
+  variable: "--font-zen-kaku",
+  display: "swap",
+});
+
+const notoSansJP = Noto_Sans_JP({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-noto",
+  display: "swap",
+});
+
+const zenMaru = Zen_Maru_Gothic({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-zen-maru",
   display: "swap",
 });
 
@@ -54,7 +74,7 @@ export default function RootLayout({
   return (
     <html
       lang="ja"
-      className={`${inter.variable} ${zenKaku.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${zenKaku.variable} ${notoSansJP.variable} ${zenMaru.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-screen font-sans antialiased">
         {children}

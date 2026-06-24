@@ -424,14 +424,14 @@ export function FlowWizard({
   return (
     <div className="space-y-7">
       {/* Stepper */}
-      <ol className="flex items-start">
+      <ol className="flex items-start sm:pb-7">
         {STEPS.map((s, index) => {
           const state =
             index < stepIndex ? "done" : index === stepIndex ? "active" : "todo";
           const clickable = index <= maxReached && index !== stepIndex;
           return (
             <Fragment key={s.id}>
-              <li className="flex flex-col items-center gap-2">
+              <li className="relative flex shrink-0 flex-col items-center">
                 <button
                   type="button"
                   className="step-bubble"
@@ -448,7 +448,7 @@ export function FlowWizard({
                   )}
                 </button>
                 <span
-                  className="step-caption hidden sm:block"
+                  className="step-caption absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap sm:block"
                   data-state={state}
                 >
                   {s.label}

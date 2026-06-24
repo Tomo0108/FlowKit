@@ -73,15 +73,15 @@ export const accents: AccentTheme[] = [
   {
     id: "amber",
     label: "Amber",
-    swatch: "oklch(0.74 0.1 70)",
+    swatch: "oklch(0.66 0.12 65)",
     vars: {
-      "--brand": "oklch(0.72 0.1 70)",
-      "--brand-strong": "oklch(0.66 0.1 70)",
+      "--brand": "oklch(0.64 0.12 65)",
+      "--brand-strong": "oklch(0.58 0.12 65)",
       "--brand-soft": "oklch(0.965 0.032 75)",
       "--brand-softer": "oklch(0.987 0.011 75)",
-      "--brand-ring": "oklch(0.72 0.1 70 / 0.32)",
-      "--brand-foreground": "oklch(0.26 0.03 70)",
-      "--brand-glow": "oklch(0.76 0.1 70 / 0.16)",
+      "--brand-ring": "oklch(0.64 0.12 65 / 0.32)",
+      "--brand-foreground": "oklch(0.99 0 0)",
+      "--brand-glow": "oklch(0.68 0.12 65 / 0.16)",
     },
   },
   {

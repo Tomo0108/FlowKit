@@ -39,6 +39,7 @@
 
 :root {
   --radius: 0.75rem;
+  --font-jp: var(--font-zen-kaku);
 
   /* shadcn neutral base */
   --background: oklch(0.99 0.002 270);
@@ -579,6 +580,13 @@ input::placeholder {
 
 .animate-view {
   animation: view-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-animations="off"] .animate-fade-up,
+[data-animations="off"] .animate-view,
+[data-animations="off"] .animate-slide-next,
+[data-animations="off"] .animate-slide-back {
+  animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
