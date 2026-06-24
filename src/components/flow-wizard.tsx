@@ -42,6 +42,7 @@ import {
   FREQUENCY_OPTIONS,
   WEEKDAYS,
 } from "@/lib/schedule";
+import { useCompactMotion } from "@/lib/use-compact-motion";
 import { downloadBlob } from "@/lib/utils";
 import {
   defaultFlowConfig,
@@ -52,6 +53,12 @@ import {
 type StepId = "source" | "sheet" | "output" | "schedule" | "review";
 
 const STEPS: { id: StepId; label: string; title: string; subtitle: string }[] = [
+  {
+    id: "schedule",
+    label: "実行時刻",
+    title: "実行スケジュール",
+    subtitle: "自動バッチを実行する頻度と時刻を指定します",
+  },
   {
     id: "source",
     label: "ソース",
@@ -69,12 +76,6 @@ const STEPS: { id: StepId; label: string; title: string; subtitle: string }[] = 
     label: "出力先",
     title: "出力先と名前",
     subtitle: "CSV の配置先とフロー名を設定します",
-  },
-  {
-    id: "schedule",
-    label: "実行時刻",
-    title: "実行スケジュール",
-    subtitle: "自動バッチを実行する頻度と時刻を指定します",
   },
   {
     id: "review",
@@ -255,10 +256,14 @@ function TimeStepper({
 }
 
 const reviewSteps = [
-  { icon: Box, label: "ソースから Excel を取得" },
-  { icon: FileSpreadsheet, label: "指定シートをコピーして CSV 化" },
-  { icon: FileText, label: "CSV を Box フォルダへ配置" },
-  { icon: Clock, label: "設定したスケジュールで自動実行" },
+  { icon: Clock, label: "設定したスケジュールで自動実行", schedule: true },
+  { icon: Box, label: "ソースから Excel を取得", schedule: false },
+  {
+    icon: FileSpreadsheet,
+    label: "指定シートをコピーして CSV 化",
+    schedule: false,
+  },
+  { icon: FileText, label: "CSV を Box フォルダへ配置", schedule: false },
 ];
 
 export function FlowWizard({
@@ -274,6 +279,7 @@ export function FlowWizard({
   const [isExporting, setIsExporting] = useState(false);
   const [exportedFile, setExportedFile] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const compactMotion = useCompactMotion();
 
   const form = useForm<FlowConfig>({
     resolver: zodResolver(flowConfigSchema),
@@ -387,37 +393,52 @@ export function FlowWizard({
   }
 
   const spring = { type: "spring" as const, stiffness: 320, damping: 34, mass: 0.85 };
+  const compactTransition = {
+    duration: 0.18,
+    ease: [0.22, 1, 0.36, 1] as const,
+  };
+  const headerOffset = compactMotion ? 8 : 18;
+  const contentEnterOffset = compactMotion ? 12 : 48;
+  const contentExitOffset = compactMotion ? 10 : 36;
 
   const headerVariants = {
     initial: (dir: "next" | "back") => ({
       opacity: 0,
-      x: dir === "next" ? 18 : -18,
+      x: dir === "next" ? headerOffset : -headerOffset,
     }),
-    animate: { opacity: 1, x: 0, transition: spring },
+    animate: {
+      opacity: 1,
+      x: 0,
+      transition: compactMotion ? compactTransition : spring,
+    },
     exit: (dir: "next" | "back") => ({
       opacity: 0,
-      x: dir === "next" ? -14 : 14,
-      transition: { duration: 0.2, ease: [0.4, 0, 1, 1] as const },
+      x: dir === "next" ? -headerOffset : headerOffset,
+      transition: compactMotion
+        ? { duration: 0.14, ease: [0.4, 0, 1, 1] as const }
+        : { duration: 0.2, ease: [0.4, 0, 1, 1] as const },
     }),
   };
 
   const contentVariants = {
     initial: (dir: "next" | "back") => ({
       opacity: 0,
-      x: dir === "next" ? 48 : -48,
-      filter: "blur(4px)",
+      x: dir === "next" ? contentEnterOffset : -contentEnterOffset,
+      filter: compactMotion ? "none" : "blur(4px)",
     }),
     animate: {
       opacity: 1,
       x: 0,
-      filter: "blur(0px)",
-      transition: spring,
+      filter: "none",
+      transition: compactMotion ? compactTransition : spring,
     },
     exit: (dir: "next" | "back") => ({
       opacity: 0,
-      x: dir === "next" ? -36 : 36,
-      filter: "blur(4px)",
-      transition: { duration: 0.22, ease: [0.4, 0, 1, 1] as const },
+      x: dir === "next" ? -contentExitOffset : contentExitOffset,
+      filter: compactMotion ? "none" : "blur(4px)",
+      transition: compactMotion
+        ? { duration: 0.14, ease: [0.4, 0, 1, 1] as const }
+        : { duration: 0.22, ease: [0.4, 0, 1, 1] as const },
     }),
   };
 
@@ -477,6 +498,7 @@ export function FlowWizard({
             animate="animate"
             exit="exit"
             className="mb-6"
+            data-compact-motion={compactMotion ? "true" : undefined}
           >
             <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
               Step {stepIndex + 1} / {STEPS.length}
@@ -496,6 +518,7 @@ export function FlowWizard({
             initial="initial"
             animate="animate"
             exit="exit"
+            data-compact-motion={compactMotion ? "true" : undefined}
           >
           {step.id === "source" && (
             <div className="space-y-6">
@@ -847,10 +870,9 @@ export function FlowWizard({
                   <ol className="mt-4 space-y-3">
                     {reviewSteps.map((rs, index) => {
                       const Icon = rs.icon;
-                      const label =
-                        index === reviewSteps.length - 1
-                          ? `${scheduleText} に自動実行`
-                          : rs.label;
+                      const label = rs.schedule
+                        ? `${scheduleText} に自動実行`
+                        : rs.label;
                       return (
                         <li key={rs.label} className="flex items-center gap-3">
                           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border bg-card text-[var(--brand)]">

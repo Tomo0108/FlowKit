@@ -16,7 +16,7 @@ import {
 } from "@/lib/theme";
 
 export type FontScale = "sm" | "md" | "lg";
-export type FontFamily = "zenKaku" | "noto" | "zenMaru";
+export type FontFamily = "zenKaku" | "noto" | "zenMaru" | "meiryo";
 
 const FONT_SCALE_PX: Record<FontScale, string> = {
   sm: "15px",
@@ -28,6 +28,7 @@ const FONT_VAR: Record<FontFamily, string> = {
   zenKaku: "var(--font-zen-kaku)",
   noto: "var(--font-noto)",
   zenMaru: "var(--font-zen-maru)",
+  meiryo: 'Meiryo, "Yu Gothic", system-ui, sans-serif',
 };
 
 const KEYS = {

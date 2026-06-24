@@ -8,10 +8,10 @@ import {
 } from "lucide-react";
 
 const pipeline = [
+  { icon: Clock, label: "定期実行" },
   { icon: Box, label: "Excel 取得" },
   { icon: FileSpreadsheet, label: "CSV 変換" },
   { icon: FileText, label: "Box へ配置" },
-  { icon: Clock, label: "定期実行" },
 ];
 
 const importSteps = [

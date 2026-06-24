@@ -1,16 +1,14 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="g" x1="120" y1="96" x2="392" y2="416" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7C6CF0"/>
-      <stop offset="1" stop-color="#5E50C8"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="120" fill="url(#g)"/>
-  <g stroke="#fff" stroke-width="34" stroke-linecap="round">
-    <path d="M168 256 L344 152"/>
-    <path d="M168 256 L344 360"/>
+  <rect width="512" height="512" fill="#000"/>
+  <g fill="#F6BE3F">
+    <rect x="110" y="62" width="122" height="92" rx="14"/>
+    <rect x="154" y="140" width="34" height="74"/>
+    <path d="M171 204 228 261 171 318 114 261Z"/>
+    <rect x="154" y="308" width="34" height="76"/>
+    <rect x="113" y="372" width="118" height="88" rx="13"/>
   </g>
-  <circle cx="140" cy="256" r="46" fill="#fff"/>
-  <circle cx="360" cy="152" r="46" fill="#fff"/>
-  <circle cx="360" cy="360" r="46" fill="#fff"/>
+  <g stroke="#F6BE3F" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M254 261 397 145"/>
+    <path d="M254 261 401 430"/>
+  </g>
 </svg>

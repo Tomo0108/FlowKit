@@ -200,6 +200,27 @@ input::placeholder {
   border: 1px solid oklch(1 0 0 / 0.25);
 }
 
+.brand-wordmark {
+  font-family: var(--font-inter), "Arial Black", "Helvetica Neue", system-ui,
+    sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.055em;
+  color: var(--foreground);
+  text-shadow: 0 1px 0 oklch(1 0 0 / 0.45);
+}
+
+.brand-wordmark-accent {
+  color: var(--brand);
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  [data-compact-motion="true"] {
+    will-change: opacity, transform;
+  }
+}
+
 /* ---------- Stepper ---------- */
 .step-bubble {
   display: grid;

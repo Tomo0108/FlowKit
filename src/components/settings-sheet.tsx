@@ -22,6 +22,7 @@ const FONT_FAMILIES: { value: FontFamily; label: string; cssVar: string }[] = [
   { value: "zenKaku", label: "Zen Kaku Gothic", cssVar: "var(--font-zen-kaku)" },
   { value: "noto", label: "Noto Sans JP", cssVar: "var(--font-noto)" },
   { value: "zenMaru", label: "Zen Maru Gothic", cssVar: "var(--font-zen-maru)" },
+  { value: "meiryo", label: "メイリオ", cssVar: 'Meiryo, "Yu Gothic", sans-serif' },
 ];
 
 function Switch({

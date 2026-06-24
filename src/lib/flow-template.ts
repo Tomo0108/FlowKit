@@ -8,8 +8,8 @@ export const FLOW_TEMPLATE = {
 } as const;
 
 export const WORKFLOW_STEPS = [
-  { id: 1, label: "Box フォルダから Excel 取得" },
-  { id: 2, label: "指定シートをコピーして CSV 化" },
-  { id: 3, label: "CSV を Box フォルダへ配置" },
-  { id: 4, label: "毎日 10:00 に自動実行" },
+  { id: 1, label: "毎日 10:00 に自動実行" },
+  { id: 2, label: "Box フォルダから Excel 取得" },
+  { id: 3, label: "指定シートをコピーして CSV 化" },
+  { id: 4, label: "CSV を Box フォルダへ配置" },
 ] as const;

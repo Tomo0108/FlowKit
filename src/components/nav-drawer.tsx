@@ -38,8 +38,8 @@ function BrandMark() {
       <span className="brand-mark text-[var(--brand-foreground)]">
         <BrandGlyph className="h-[1.05rem] w-[1.05rem]" />
       </span>
-      <span className="text-[0.9375rem] font-semibold tracking-tight">
-        Flow<span className="text-[var(--brand)]">Kit</span>
+      <span className="brand-wordmark">
+        Flow<span className="brand-wordmark-accent">Kit</span>
       </span>
     </div>
   );
