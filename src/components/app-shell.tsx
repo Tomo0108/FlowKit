@@ -11,6 +11,7 @@ import {
   NavDrawer,
   type AppView,
 } from "@/components/nav-drawer";
+import { Surface } from "@/components/ui/surface";
 import {
   generateFlowPackage,
   summarizeFlow,
@@ -20,6 +21,21 @@ import {
   defaultFlowConfig,
   flowConfigSchema,
 } from "@/lib/validators";
+
+const viewHeadings: Record<AppView, { title: string; subtitle?: string }> = {
+  create: {
+    title: "フロー作成",
+    subtitle: "Box Excel シートを CSV 化して日次出力",
+  },
+  preview: {
+    title: "確認",
+    subtitle: "設定内容と処理フロー",
+  },
+  help: {
+    title: "ヘルプ",
+    subtitle: "使い方とインポート手順",
+  },
+};
 
 export function AppShell() {
   const [view, setView] = useState<AppView>("create");
@@ -36,6 +52,7 @@ export function AppShell() {
 
   const values = form.watch();
   const summary = summarizeFlow(values);
+  const heading = viewHeadings[view];
 
   async function onExport() {
     setExportMessage(null);
@@ -61,37 +78,52 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <HeaderBar
-        currentView={view}
-        onMenuOpen={() => setNavOpen(true)}
-        onNavigate={setView}
-      />
-      <NavDrawer
-        open={navOpen}
-        onClose={() => setNavOpen(false)}
-        currentView={view}
-        onNavigate={setView}
-      />
+    <div className="app-bg">
+      <div className="app-content">
+        <HeaderBar
+          currentView={view}
+          onMenuOpen={() => setNavOpen(true)}
+          onNavigate={setView}
+        />
+        <NavDrawer
+          open={navOpen}
+          onClose={() => setNavOpen(false)}
+          currentView={view}
+          onNavigate={setView}
+        />
 
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
-        {view === "create" && (
-          <FlowForm
-            form={form}
-            formTab={formTab}
-            onFormTabChange={setFormTab}
-            isExporting={isExporting}
-            exportMessage={exportMessage}
-            onExport={onExport}
-          />
-        )}
+        <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+          <header className="mb-8 animate-fade-up">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              {heading.title}
+            </h1>
+            {heading.subtitle && (
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {heading.subtitle}
+              </p>
+            )}
+          </header>
 
-        {view === "preview" && (
-          <FlowPreview config={values} summary={summary} />
-        )}
+          <Surface className="animate-fade-up [animation-delay:60ms]">
+            {view === "create" && (
+              <FlowForm
+                form={form}
+                formTab={formTab}
+                onFormTabChange={setFormTab}
+                isExporting={isExporting}
+                exportMessage={exportMessage}
+                onExport={onExport}
+              />
+            )}
 
-        {view === "help" && <HelpContent />}
-      </main>
+            {view === "preview" && (
+              <FlowPreview config={values} summary={summary} />
+            )}
+
+            {view === "help" && <HelpContent />}
+          </Surface>
+        </main>
+      </div>
     </div>
   );
 }
