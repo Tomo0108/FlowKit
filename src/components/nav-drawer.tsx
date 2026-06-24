@@ -2,6 +2,7 @@
 
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AccentSwitcher } from "@/components/accent-switcher";
 import { cn } from "@/lib/utils";
 
 export type AppView = "create" | "preview" | "help";
@@ -11,6 +12,21 @@ const navItems: { id: AppView; label: string }[] = [
   { id: "preview", label: "確認" },
   { id: "help", label: "ヘルプ" },
 ];
+
+function BrandMark() {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="brand-mark">
+        <span className="text-[0.6875rem] font-bold tracking-tight text-[var(--accent-foreground)]">
+          F
+        </span>
+      </span>
+      <span className="text-[0.9375rem] font-semibold tracking-tight">
+        FlowKit
+      </span>
+    </div>
+  );
+}
 
 type NavDrawerProps = {
   open: boolean;
@@ -34,7 +50,7 @@ export function NavDrawer({
     <>
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm transition-opacity duration-300",
+          "fixed inset-0 z-40 bg-foreground/25 backdrop-blur-sm transition-opacity duration-300 md:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={onClose}
@@ -42,20 +58,18 @@ export function NavDrawer({
       />
       <nav
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex w-[min(100vw,20rem)] flex-col border-l border-border/80 bg-card/95 shadow-[var(--shadow-elevated)] backdrop-blur-xl transition-transform duration-300 ease-out",
+          "fixed inset-y-0 right-0 z-50 flex w-[min(100vw,18rem)] flex-col border-l border-border bg-card shadow-[var(--shadow-elevated)] transition-transform duration-300 ease-out md:hidden",
           open ? "translate-x-0" : "translate-x-full",
         )}
         aria-hidden={!open}
       >
         <div className="flex items-center justify-between px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Menu
-          </p>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="閉じる">
+          <BrandMark />
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="閉じる">
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <ul className="flex flex-col gap-0.5 px-3 pb-6">
+        <ul className="flex flex-col gap-0.5 px-3">
           {navItems.map((item) => (
             <li key={item.id}>
               <button
@@ -64,7 +78,7 @@ export function NavDrawer({
                 className={cn(
                   "w-full rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
                   currentView === item.id
-                    ? "bg-foreground text-primary-foreground font-medium"
+                    ? "bg-[var(--accent-soft)] font-medium text-[var(--accent)]"
                     : "text-foreground/70 hover:bg-muted hover:text-foreground",
                 )}
               >
@@ -73,6 +87,12 @@ export function NavDrawer({
             </li>
           ))}
         </ul>
+        <div className="mt-auto border-t border-border px-5 py-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">テーマ</span>
+            <AccentSwitcher />
+          </div>
+        </div>
       </nav>
     </>
   );
@@ -86,40 +106,38 @@ type HeaderBarProps = {
 
 export function HeaderBar({ currentView, onMenuOpen, onNavigate }: HeaderBarProps) {
   return (
-    <header className="sticky top-0 z-30 border-b border-border/70 bg-card/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card shadow-[0_1px_2px_oklch(0.2_0.01_80/0.05)]">
-            <span className="text-[0.625rem] font-bold tracking-[0.08em] text-foreground">
-              FK
-            </span>
-          </div>
-          <span className="text-sm font-semibold tracking-tight">FlowKit</span>
-        </div>
+    <header className="sticky top-0 z-30 border-b border-border/70 bg-background/70 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
+        <BrandMark />
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-7 md:flex">
           {navItems.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => onNavigate(item.id)}
               data-active={currentView === item.id}
-              className="nav-link px-1 py-2 text-sm"
+              className="nav-link"
             >
               {item.label}
             </button>
           ))}
         </nav>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onMenuOpen}
-          className="md:hidden"
-          aria-label="メニューを開く"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="hidden md:block">
+            <AccentSwitcher />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onMenuOpen}
+            className="md:hidden"
+            aria-label="メニューを開く"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </header>
   );

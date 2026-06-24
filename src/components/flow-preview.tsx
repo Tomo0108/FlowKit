@@ -1,81 +1,107 @@
 "use client";
 
+import { CheckCircle2, Circle } from "lucide-react";
 import type { FlowConfig } from "@/lib/validators";
 import { WORKFLOW_STEPS } from "@/lib/flow-template";
+import { cn } from "@/lib/utils";
 
 type FlowPreviewProps = {
   config: FlowConfig;
   summary: string[];
+  compact?: boolean;
 };
 
-export function FlowPreview({ config, summary }: FlowPreviewProps) {
-  const ready =
+function isReady(config: FlowConfig) {
+  const sourceReady =
     config.sourceBoxFolderId?.trim() ||
     (config.sourceSharePointSiteUrl?.trim() &&
       config.sourceSharePointFolderPath?.trim());
+  return Boolean(
+    sourceReady &&
+      config.sheetName.trim() &&
+      config.destinationBoxFolderId.trim(),
+  );
+}
 
-  if (!ready || !config.sheetName.trim() || !config.destinationBoxFolderId.trim()) {
-    return (
-      <div className="flex min-h-[12rem] items-center justify-center">
-        <p className="text-sm text-muted-foreground">
-          ソース・シート・出力先を入力してください
-        </p>
-      </div>
-    );
-  }
+export function FlowPreview({ config, summary, compact = false }: FlowPreviewProps) {
+  const ready = isReady(config);
 
   return (
-    <div className="space-y-8">
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          設定サマリー
-        </h2>
-        <dl className="mt-4 space-y-3">
-          {summary.map((line) => {
-            const [term, ...rest] = line.split(": ");
-            return (
-              <div
-                key={line}
-                className="grid grid-cols-[7rem_1fr] gap-3 border-b border-border/60 pb-3 last:border-0"
-              >
-                <dt className="text-xs font-medium text-muted-foreground">
-                  {term}
-                </dt>
-                <dd className="text-sm text-foreground">{rest.join(": ")}</dd>
-              </div>
-            );
-          })}
-        </dl>
-      </section>
+    <div className="space-y-7">
+      <div
+        className={cn(
+          "flex items-center gap-2.5 rounded-xl border px-4 py-3",
+          ready
+            ? "border-[var(--accent-ring)] bg-[var(--accent-softer)]"
+            : "border-border bg-muted/40",
+        )}
+      >
+        {ready ? (
+          <CheckCircle2
+            className="h-4 w-4 text-[var(--accent)]"
+            aria-hidden
+          />
+        ) : (
+          <Circle className="h-4 w-4 text-muted-foreground" aria-hidden />
+        )}
+        <span className="text-sm font-medium">
+          {ready ? "出力の準備ができました" : "必須項目を入力してください"}
+        </span>
+      </div>
 
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          処理フロー
-        </h2>
-        <ol className="mt-4 space-y-0">
-          {WORKFLOW_STEPS.map((step, index) => (
-            <li
-              key={step.id}
-              className="relative flex gap-4 pb-6 last:pb-0"
-            >
-              {index < WORKFLOW_STEPS.length - 1 && (
-                <span
-                  className="absolute left-[0.6875rem] top-7 h-[calc(100%-1.25rem)] w-px bg-border"
-                  aria-hidden
-                />
-              )}
-              <span className="relative z-[1] flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-card text-[0.6875rem] font-semibold text-muted-foreground">
-                {step.id}
-              </span>
-              <span className="pt-0.5 text-sm leading-relaxed text-foreground/80">
-                {step.id === 4
-                  ? `毎日 ${String(config.scheduleHour).padStart(2, "0")}:${String(config.scheduleMinute).padStart(2, "0")} に自動実行`
-                  : step.label}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      {ready && (
+        <>
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              設定サマリー
+            </h2>
+            <dl className="mt-4 space-y-0">
+              {summary.map((line) => {
+                const [term, ...rest] = line.split(": ");
+                return (
+                  <div
+                    key={line}
+                    className="grid grid-cols-[6.5rem_1fr] gap-3 border-b border-border/60 py-2.5 last:border-0"
+                  >
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      {term}
+                    </dt>
+                    <dd className="break-words text-sm text-foreground">
+                      {rest.join(": ")}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </section>
+
+          {!compact && (
+            <section>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                処理フロー
+              </h2>
+              <ol className="mt-4 space-y-0">
+                {WORKFLOW_STEPS.map((step, index) => (
+                  <li key={step.id} className="relative flex gap-4 pb-6 last:pb-0">
+                    {index < WORKFLOW_STEPS.length - 1 && (
+                      <span
+                        className="absolute left-[0.8125rem] top-7 h-[calc(100%-1.25rem)] w-px bg-border"
+                        aria-hidden
+                      />
+                    )}
+                    <span className="timeline-dot relative z-[1]">{step.id}</span>
+                    <span className="pt-1 text-sm leading-relaxed text-foreground/80">
+                      {step.id === 4
+                        ? `毎日 ${String(config.scheduleHour).padStart(2, "0")}:${String(config.scheduleMinute).padStart(2, "0")} に自動実行`
+                        : step.label}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+        </>
+      )}
     </div>
   );
 }

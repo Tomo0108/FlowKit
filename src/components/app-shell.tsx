@@ -6,30 +6,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FlowForm } from "@/components/flow-form";
 import { FlowPreview } from "@/components/flow-preview";
 import { HelpContent } from "@/components/help-content";
-import {
-  HeaderBar,
-  NavDrawer,
-  type AppView,
-} from "@/components/nav-drawer";
+import { HeaderBar, NavDrawer, type AppView } from "@/components/nav-drawer";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Surface } from "@/components/ui/surface";
 import {
   generateFlowPackage,
   summarizeFlow,
 } from "@/lib/power-automate/generate-package";
 import { downloadBlob } from "@/lib/utils";
-import {
-  defaultFlowConfig,
-  flowConfigSchema,
-} from "@/lib/validators";
+import { defaultFlowConfig, flowConfigSchema } from "@/lib/validators";
 
-const viewHeadings: Record<AppView, { title: string; subtitle?: string }> = {
+const viewHeadings: Record<AppView, { title: string; subtitle: string }> = {
   create: {
-    title: "フロー作成",
-    subtitle: "Box Excel シートを CSV 化して日次出力",
+    title: "フローを作成",
+    subtitle: "Box / SharePoint の Excel シートを CSV 化して日次出力",
   },
   preview: {
     title: "確認",
-    subtitle: "設定内容と処理フロー",
+    subtitle: "設定内容と処理フローのプレビュー",
   },
   help: {
     title: "ヘルプ",
@@ -37,7 +31,7 @@ const viewHeadings: Record<AppView, { title: string; subtitle?: string }> = {
   },
 };
 
-export function AppShell() {
+function Shell() {
   const [view, setView] = useState<AppView>("create");
   const [navOpen, setNavOpen] = useState(false);
   const [formTab, setFormTab] = useState("source");
@@ -69,7 +63,6 @@ export function AppShell() {
       const { blob, fileName } = await generateFlowPackage(config);
       downloadBlob(blob, fileName);
       setExportMessage(`${fileName} をダウンロードしました`);
-      setView("preview");
     } catch {
       setExportMessage("出力に失敗しました");
     } finally {
@@ -79,33 +72,29 @@ export function AppShell() {
 
   return (
     <div className="app-bg">
-      <div className="app-content">
-        <HeaderBar
-          currentView={view}
-          onMenuOpen={() => setNavOpen(true)}
-          onNavigate={setView}
-        />
-        <NavDrawer
-          open={navOpen}
-          onClose={() => setNavOpen(false)}
-          currentView={view}
-          onNavigate={setView}
-        />
+      <HeaderBar
+        currentView={view}
+        onMenuOpen={() => setNavOpen(true)}
+        onNavigate={setView}
+      />
+      <NavDrawer
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        currentView={view}
+        onNavigate={setView}
+      />
 
-        <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
-          <header className="mb-8 animate-fade-up">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              {heading.title}
-            </h1>
-            {heading.subtitle && (
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                {heading.subtitle}
-              </p>
-            )}
-          </header>
+      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+        <header className="mb-9 animate-fade-up">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+            {heading.title}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">{heading.subtitle}</p>
+        </header>
 
-          <Surface className="animate-fade-up [animation-delay:60ms]">
-            {view === "create" && (
+        {view === "create" && (
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+            <Surface className="animate-fade-up [animation-delay:60ms]">
               <FlowForm
                 form={form}
                 formTab={formTab}
@@ -114,16 +103,43 @@ export function AppShell() {
                 exportMessage={exportMessage}
                 onExport={onExport}
               />
-            )}
+            </Surface>
 
-            {view === "preview" && (
+            <aside className="hidden animate-fade-up lg:block lg:sticky lg:top-24 [animation-delay:120ms]">
+              <div className="surface-quiet p-6">
+                <p className="mb-5 text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
+                  Live preview
+                </p>
+                <FlowPreview config={values} summary={summary} compact />
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {view === "preview" && (
+          <div className="mx-auto max-w-2xl">
+            <Surface className="animate-fade-up [animation-delay:60ms]">
               <FlowPreview config={values} summary={summary} />
-            )}
+            </Surface>
+          </div>
+        )}
 
-            {view === "help" && <HelpContent />}
-          </Surface>
-        </main>
-      </div>
+        {view === "help" && (
+          <div className="mx-auto max-w-2xl">
+            <Surface className="animate-fade-up [animation-delay:60ms]">
+              <HelpContent />
+            </Surface>
+          </div>
+        )}
+      </main>
     </div>
+  );
+}
+
+export function AppShell() {
+  return (
+    <ThemeProvider>
+      <Shell />
+    </ThemeProvider>
   );
 }

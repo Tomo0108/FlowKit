@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Box, Loader2, Share2 } from "lucide-react";
 import { WorkflowPipeline } from "@/components/workflow-pipeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,6 +81,7 @@ export function FlowForm({
                   form.setValue("dataSourceType", "box", { shouldValidate: true })
                 }
               >
+                <Box className="h-3.5 w-3.5" aria-hidden />
                 Box
               </button>
               <button
@@ -93,6 +94,7 @@ export function FlowForm({
                   })
                 }
               >
+                <Share2 className="h-3.5 w-3.5" aria-hidden />
                 SharePoint
               </button>
             </div>
@@ -196,8 +198,8 @@ export function FlowForm({
         </TabsContent>
 
         <TabsContent value="schedule" className="space-y-6">
-          <div className="rounded-2xl border border-border/80 bg-muted/40 px-6 py-5">
-            <p className="text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">
+          <div className="rounded-2xl border border-[var(--accent-ring)] bg-[var(--accent-softer)] px-6 py-5">
+            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-[var(--accent)]">
               自動バッチ
             </p>
             <div className="time-display mt-3">
@@ -208,7 +210,7 @@ export function FlowForm({
               <span className="time-display-value">
                 {String(values.scheduleMinute).padStart(2, "0")}
               </span>
-              <span className="time-display-suffix ml-2">毎日</span>
+              <span className="ml-2 text-sm text-muted-foreground">毎日実行</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -237,7 +239,7 @@ export function FlowForm({
         </TabsContent>
       </Tabs>
 
-      <div className="space-y-3 border-t border-border/80 pt-6">
+      <div className="space-y-3 border-t border-border pt-6">
         {exportMessage && (
           <p className="text-xs text-muted-foreground">{exportMessage}</p>
         )}
