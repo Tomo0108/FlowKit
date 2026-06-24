@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, Settings2, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +65,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function SettingsButton() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const {
     accent,
     setAccent,
@@ -75,6 +77,8 @@ export function SettingsButton() {
     setFontFamily,
   } = useSettings();
 
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     if (!open) return;
     function onKey(event: KeyboardEvent) {
@@ -84,17 +88,8 @@ export function SettingsButton() {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  return (
+  const sheet = (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="設定を開く"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <Settings2 className="h-4 w-4" aria-hidden />
-      </button>
-
       <div
         className={cn(
           "fixed inset-0 z-50 bg-foreground/25 backdrop-blur-sm transition-opacity duration-300",
@@ -242,6 +237,20 @@ export function SettingsButton() {
           </section>
         </div>
       </aside>
+    </>
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="設定を開く"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <Settings2 className="h-4 w-4" aria-hidden />
+      </button>
+      {mounted ? createPortal(sheet, document.body) : null}
     </>
   );
 }
