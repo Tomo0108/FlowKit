@@ -23,9 +23,9 @@ export const flowConfigSchema = z
       .string()
       .min(1, "CSV 出力先の Box フォルダ ID を入力してください"),
     csvFileNamePrefix: z.string().max(50).optional(),
-    scheduleHour: z.coerce.number().int().min(0).max(23).default(10),
-    scheduleMinute: z.coerce.number().int().min(0).max(59).default(0),
-    timeZone: z.string().default("Tokyo Standard Time"),
+    scheduleHour: z.coerce.number().int().min(0).max(23),
+    scheduleMinute: z.coerce.number().int().min(0).max(59),
+    timeZone: z.string().min(1, "タイムゾーンを入力してください"),
   })
   .superRefine((value, ctx) => {
     if (value.dataSourceType === "box" && !value.sourceBoxFolderId?.trim()) {
