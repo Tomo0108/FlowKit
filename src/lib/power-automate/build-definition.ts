@@ -286,7 +286,7 @@ export function buildConnectionReferences(config: FlowConfig) {
 export function buildFlowDefinitionFile(config: FlowConfig, flowId: string) {
   return {
     name: flowId,
-    id: `/providers/Microsoft.ProcessSimple/environments/Default-${flowId}/flows/${flowId}`,
+    id: `/providers/Microsoft.Flow/flows/${flowId}`,
     type: "Microsoft.Flow/flows",
     properties: {
       apiId: "/providers/Microsoft.PowerApps/apis/shared_logicflows",
