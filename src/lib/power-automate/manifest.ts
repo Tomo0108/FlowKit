@@ -1,107 +1,181 @@
 import type { FlowConfig } from "@/lib/validators";
 import { buildFlowDefinitionFile } from "@/lib/power-automate/build-definition";
 
-type ApiResource = {
-  type: "Microsoft.PowerApps/apis/connections";
+const CONNECTOR_DEFINITIONS = {
+  shared_box: {
+    displayName: "Box",
+    connectionDisplayName: "Box connection",
+  },
+  shared_excelonlinebusiness: {
+    displayName: "Excel Online (Business)",
+    connectionDisplayName: "Excel Online (Business) connection",
+  },
+  shared_onedriveforbusiness: {
+    displayName: "OneDrive for Business",
+    connectionDisplayName: "OneDrive for Business connection",
+  },
+  shared_sharepointonline: {
+    displayName: "SharePoint",
+    connectionDisplayName: "SharePoint connection",
+  },
+} as const;
+
+type ConnectorName = keyof typeof CONNECTOR_DEFINITIONS;
+
+type ApiManifestResource = {
+  id: string;
+  name: ConnectorName;
+  type: "Microsoft.PowerApps/apis";
   suggestedCreationType: "Existing";
-  creationType: string;
   details: {
-    type: string;
     displayName: string;
   };
   configurableBy: "System";
-  apiDefinition: {
-    name: string;
-    id: string;
-    type: "Microsoft.PowerApps/apis";
-  };
-  dependsOn: string[];
+  hierarchy: "Child";
+  dependsOn: [];
 };
 
-function buildApiResource(displayName: string, apiName: string): ApiResource {
+type ConnectionManifestResource = {
+  type: "Microsoft.PowerApps/apis/connections";
+  suggestedCreationType: "Existing";
+  creationType: "Existing";
+  details: {
+    displayName: string;
+  };
+  configurableBy: "User";
+  hierarchy: "Child";
+  dependsOn: [string];
+};
+
+export type PackageResourceIds = {
+  packageTelemetryId: string;
+  connectorNames: ConnectorName[];
+  apiResourceIds: Record<ConnectorName, string>;
+  connectionResourceIds: Record<ConnectorName, string>;
+};
+
+function newResourceId(): string {
+  return crypto.randomUUID();
+}
+
+function getConnectorNames(config: FlowConfig): ConnectorName[] {
+  const connectorNames: ConnectorName[] = [
+    "shared_box",
+    "shared_excelonlinebusiness",
+  ];
+
+  if (config.dataSourceType === "box") {
+    connectorNames.push("shared_onedriveforbusiness");
+  }
+
+  if (config.dataSourceType === "sharepoint") {
+    connectorNames.push("shared_sharepointonline");
+  }
+
+  return connectorNames;
+}
+
+export function buildPackageResourceIds(
+  config: FlowConfig,
+): PackageResourceIds {
+  const connectorNames = getConnectorNames(config);
+  const apiResourceIds = {} as Record<ConnectorName, string>;
+  const connectionResourceIds = {} as Record<ConnectorName, string>;
+
+  for (const connectorName of connectorNames) {
+    apiResourceIds[connectorName] = newResourceId();
+    connectionResourceIds[connectorName] = newResourceId();
+  }
+
   return {
-    type: "Microsoft.PowerApps/apis/connections",
+    packageTelemetryId: newResourceId(),
+    connectorNames,
+    apiResourceIds,
+    connectionResourceIds,
+  };
+}
+
+function buildApiManifestResource(apiName: ConnectorName): ApiManifestResource {
+  const definition = CONNECTOR_DEFINITIONS[apiName];
+
+  return {
+    id: `/providers/Microsoft.PowerApps/apis/${apiName}`,
+    name: apiName,
+    type: "Microsoft.PowerApps/apis",
     suggestedCreationType: "Existing",
-    creationType: "Existing, New, Update",
     details: {
-      type: "Microsoft.PowerApps/apis/connections",
-      displayName,
+      displayName: definition.displayName,
     },
     configurableBy: "System",
-    apiDefinition: {
-      name: apiName,
-      id: `/providers/Microsoft.PowerApps/apis/${apiName}`,
-      type: "Microsoft.PowerApps/apis",
-    },
+    hierarchy: "Child",
     dependsOn: [],
   };
 }
 
-function buildConnectionIds(flowId: string, config: FlowConfig) {
-  const ids = {
-    box: `${flowId}-conn-box`,
-    excel: `${flowId}-conn-excel`,
-    sharepoint: `${flowId}-conn-sharepoint`,
-    onedrive: `${flowId}-conn-onedrive`,
+function buildConnectionManifestResource(
+  apiName: ConnectorName,
+  apiResourceId: string,
+): ConnectionManifestResource {
+  const definition = CONNECTOR_DEFINITIONS[apiName];
+
+  return {
+    type: "Microsoft.PowerApps/apis/connections",
+    suggestedCreationType: "Existing",
+    creationType: "Existing",
+    details: {
+      displayName: definition.connectionDisplayName,
+    },
+    configurableBy: "User",
+    hierarchy: "Child",
+    dependsOn: [apiResourceId],
   };
-
-  const dependsOn = [ids.box, ids.excel];
-
-  if (config.dataSourceType === "box") {
-    dependsOn.push(ids.onedrive);
-  }
-  if (config.dataSourceType === "sharepoint") {
-    dependsOn.push(ids.sharepoint);
-  }
-
-  return { ids, dependsOn };
 }
 
-export function buildRootManifest(config: FlowConfig, flowId: string) {
-  const { ids, dependsOn } = buildConnectionIds(flowId, config);
-
+export function buildRootManifest(
+  config: FlowConfig,
+  flowId: string,
+  resourceIds: PackageResourceIds,
+) {
+  const dependsOn = resourceIds.connectorNames.flatMap((connectorName) => [
+    resourceIds.apiResourceIds[connectorName],
+    resourceIds.connectionResourceIds[connectorName],
+  ]);
   const resources: Record<string, object> = {
     [flowId]: {
       type: "Microsoft.Flow/flows",
       suggestedCreationType: "New",
-      creationType: "New, Update",
+      creationType: "Existing, New, Update",
       details: {
         displayName: config.flowName.trim(),
         description: config.description?.trim() || "",
       },
       configurableBy: "User",
+      hierarchy: "Root",
       dependsOn,
     },
-    [ids.box]: buildApiResource("Box", "shared_box"),
-    [ids.excel]: buildApiResource(
-      "Excel Online (Business)",
-      "shared_excelonlinebusiness",
-    ),
   };
 
-  if (config.dataSourceType === "box") {
-    resources[ids.onedrive] = buildApiResource(
-      "OneDrive for Business",
-      "shared_onedriveforbusiness",
-    );
-  }
+  for (const connectorName of resourceIds.connectorNames) {
+    const apiResourceId = resourceIds.apiResourceIds[connectorName];
+    const connectionResourceId =
+      resourceIds.connectionResourceIds[connectorName];
 
-  if (config.dataSourceType === "sharepoint") {
-    resources[ids.sharepoint] = buildApiResource(
-      "SharePoint",
-      "shared_sharepointonline",
+    resources[apiResourceId] = buildApiManifestResource(connectorName);
+    resources[connectionResourceId] = buildConnectionManifestResource(
+      connectorName,
+      apiResourceId,
     );
   }
 
   return {
-    schema: "1.0.0.0",
-    packageVersion: "1.0.0.0",
+    schema: "1.0",
     details: {
       displayName: config.flowName.trim(),
       description:
         config.description?.trim() ||
         "Box フォルダ内 Excel の指定シートを CSV 化して Box へ日次出力",
       createdTime: new Date().toISOString(),
+      packageTelemetryId: resourceIds.packageTelemetryId,
       creator: "FlowKit",
       sourceEnvironment: "",
     },
@@ -109,42 +183,30 @@ export function buildRootManifest(config: FlowConfig, flowId: string) {
   };
 }
 
-export function buildInnerManifest(config: FlowConfig, flowId: string) {
-  return buildRootManifest(config, flowId);
+export function buildInnerManifest(flowId: string) {
+  return {
+    packageSchemaVersion: "1.0",
+    flowAssets: {
+      assetPaths: [flowId],
+    },
+  };
 }
 
-export function buildApisMap(config: FlowConfig) {
-  const map: Record<string, string> = {
-    shared_box: "/providers/Microsoft.PowerApps/apis/shared_box",
-    shared_excelonlinebusiness:
-      "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
-  };
+export function buildApisMap(resourceIds: PackageResourceIds) {
+  const map: Partial<Record<ConnectorName, string>> = {};
 
-  if (config.dataSourceType === "box") {
-    map.shared_onedriveforbusiness =
-      "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness";
-  }
-
-  if (config.dataSourceType === "sharepoint") {
-    map.shared_sharepointonline =
-      "/providers/Microsoft.PowerApps/apis/shared_sharepointonline";
+  for (const connectorName of resourceIds.connectorNames) {
+    map[connectorName] = resourceIds.apiResourceIds[connectorName];
   }
 
   return map;
 }
 
-export function buildConnectionsMap(config: FlowConfig) {
-  const map: Record<string, string> = {
-    shared_box: "shared_box",
-    shared_excelonlinebusiness: "shared_excelonlinebusiness",
-  };
+export function buildConnectionsMap(resourceIds: PackageResourceIds) {
+  const map: Partial<Record<ConnectorName, string>> = {};
 
-  if (config.dataSourceType === "box") {
-    map.shared_onedriveforbusiness = "shared_onedriveforbusiness";
-  }
-
-  if (config.dataSourceType === "sharepoint") {
-    map.shared_sharepointonline = "shared_sharepointonline";
+  for (const connectorName of resourceIds.connectorNames) {
+    map[connectorName] = resourceIds.connectionResourceIds[connectorName];
   }
 
   return map;
