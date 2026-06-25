@@ -1,5 +1,6 @@
 import type { FlowConfig } from "@/lib/validators";
 import { WEEKDAY_VALUES } from "@/lib/schedule";
+import type { PackageResourceIds } from "@/lib/power-automate/manifest";
 
 const SCHEMA =
   "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#";
@@ -210,6 +211,20 @@ export function buildWorkflowDefinition(config: FlowConfig) {
     : "@outputs('List_Excel_files_in_SharePoint_folder')?['body/value']";
 
   return {
+    metadata: {
+      workflowEntityId: null,
+      processAdvisorMetadata: null,
+      flowclientsuspensionreason: "None",
+      flowclientsuspensiontime: null,
+      creator: {
+        id: crypto.randomUUID(),
+        type: "User",
+        tenantId: crypto.randomUUID(),
+      },
+      provisioningMethod: "FromDefinition",
+      failureAlertSubscription: false,
+      clientLastModifiedTime: new Date().toISOString(),
+    },
     $schema: SCHEMA,
     contentVersion: "1.0.0.0",
     parameters: {
@@ -246,36 +261,14 @@ export function buildWorkflowDefinition(config: FlowConfig) {
   };
 }
 
-export function buildConnectionReferences(config: FlowConfig) {
-  const refs: Record<string, object> = {
-    shared_box: {
-      connectionName: "shared_box",
-      source: "Embedded",
-      id: "/providers/Microsoft.PowerApps/apis/shared_box",
-      tier: "NotSpecified",
-    },
-    shared_excelonlinebusiness: {
-      connectionName: "shared_excelonlinebusiness",
-      source: "Embedded",
-      id: "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
-      tier: "NotSpecified",
-    },
-  };
+function buildConnectionReferences(resourceIds: PackageResourceIds) {
+  const refs: Record<string, object> = {};
 
-  if (config.dataSourceType === "box") {
-    refs.shared_onedriveforbusiness = {
-      connectionName: "shared_onedriveforbusiness",
+  for (const connectorName of resourceIds.connectorNames) {
+    refs[connectorName] = {
+      connectionName: resourceIds.connectionInstanceNames[connectorName],
       source: "Embedded",
-      id: "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
-      tier: "NotSpecified",
-    };
-  }
-
-  if (config.dataSourceType === "sharepoint") {
-    refs.shared_sharepointonline = {
-      connectionName: "shared_sharepointonline",
-      source: "Embedded",
-      id: "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+      id: `/providers/Microsoft.PowerApps/apis/${connectorName}`,
       tier: "NotSpecified",
     };
   }
@@ -283,27 +276,21 @@ export function buildConnectionReferences(config: FlowConfig) {
   return refs;
 }
 
-export function buildFlowDefinitionFile(config: FlowConfig, flowId: string) {
+export function buildFlowDefinitionFile(
+  config: FlowConfig,
+  definitionFlowId: string,
+  resourceIds: PackageResourceIds,
+) {
   return {
-    name: flowId,
-    id: `/providers/Microsoft.ProcessSimple/environments/Default-${flowId}/flows/${flowId}`,
+    name: definitionFlowId,
+    id: `/providers/Microsoft.Flow/flows/${definitionFlowId}`,
     type: "Microsoft.Flow/flows",
     properties: {
       apiId: "/providers/Microsoft.PowerApps/apis/shared_logicflows",
       displayName: config.flowName.trim(),
       definition: buildWorkflowDefinition(config),
-      connectionReferences: buildConnectionReferences(config),
+      connectionReferences: buildConnectionReferences(resourceIds),
       flowFailureAlertSubscribed: false,
-      isManaged: false,
-      state: "Started",
-      definitionSummary: {
-        triggers: [{ type: "Recurrence" }],
-        actions: [
-          { type: "OpenApiConnection" },
-          { type: "Foreach" },
-          { type: "If" },
-        ],
-      },
     },
   };
 }
