@@ -1,14 +1,30 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" fill="#000"/>
-  <g fill="#F6BE3F">
-    <rect x="110" y="62" width="122" height="92" rx="14"/>
-    <rect x="154" y="140" width="34" height="74"/>
-    <path d="M171 204 228 261 171 318 114 261Z"/>
-    <rect x="154" y="308" width="34" height="76"/>
-    <rect x="113" y="372" width="118" height="88" rx="13"/>
-  </g>
-  <g stroke="#F6BE3F" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M254 261 397 145"/>
-    <path d="M254 261 401 430"/>
+  <defs>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="oklch(0.57 0.14 285)" />
+      <stop offset="100%" stop-color="oklch(0.51 0.14 285)" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="160" fill="url(#brand)" />
+  <rect
+    width="512"
+    height="512"
+    rx="160"
+    fill="none"
+    stroke="white"
+    stroke-opacity="0.25"
+    stroke-width="4"
+  />
+  <g
+    transform="translate(115.2 115.2) scale(11.733333)"
+    fill="none"
+    stroke="oklch(0.99 0 0)"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect width="8" height="8" x="3" y="3" rx="2" />
+    <path d="M7 11v4a2 2 0 0 0 2 2h4" />
+    <rect width="8" height="8" x="13" y="13" rx="2" />
   </g>
 </svg>
