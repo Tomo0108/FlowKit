@@ -28,6 +28,22 @@ function openApiAction(
   };
 }
 
+function builtInAction(
+  type: string,
+  inputs: Record<string, unknown>,
+  runAfter: Record<string, string[]> = {},
+) {
+  return {
+    runAfter,
+    metadata: { operationMetadataId: metadataId() },
+    type,
+    inputs,
+  };
+}
+
+const LIST_ROWS_KEY = "List_rows_present_in_a_table";
+const CSV_TABLE_KEY = "Create_CSV_table";
+
 function buildRecurrence(config: FlowConfig) {
   const schedule: Record<string, unknown> = {
     hours: [String(config.scheduleHour)],
@@ -82,45 +98,53 @@ function buildCsvUploadAction(config: FlowConfig, csvPrefix: string, runAfter: R
       {
         folderId: config.destinationBoxFolderId.trim(),
         name: `@concat('${csvPrefix}_', ${config.dataSourceType === "box" ? "items('Apply_to_each_file')?['name']" : "items('Apply_to_each_file')?['Name']"}, '_', '${config.sheetName.trim()}', '_', formatDateTime(utcNow(), 'yyyyMMdd_HHmmss'), '.csv')`,
-        content: "@body('Convert_sheet_to_CSV')",
+        content: `@body('${CSV_TABLE_KEY}')`,
       },
       runAfter,
     ),
   };
 }
 
-function buildSheetToCsvAction(
+function buildListRowsAction(
   config: FlowConfig,
   excelSource: "onedrive" | "sharepoint",
   runAfter: Record<string, string[]>,
 ) {
-  const sheetName = config.sheetName.trim();
-  const excelParams =
+  const table = config.sheetName.trim();
+  const parameters =
     excelSource === "onedrive"
       ? {
-          source: "OneDrive for Business",
+          source: "me",
+          drive: "me",
           file: "@outputs('Save_to_OneDrive_for_processing')?['body/Id']",
-          scriptSource: "Library",
-          ScriptParameters: {
-            sheetName,
-          },
+          table,
         }
       : {
-          source: "SharePoint",
-          dataset: config.sourceSharePointSiteUrl!.trim(),
+          source: config.sourceSharePointSiteUrl!.trim(),
+          drive: config.sourceSharePointSiteUrl!.trim(),
           file: "@items('Apply_to_each_file')?['Id']",
-          scriptSource: "Library",
-          ScriptParameters: {
-            sheetName,
-          },
+          table,
         };
 
   return {
-    Convert_sheet_to_CSV: openApiAction(
+    [LIST_ROWS_KEY]: openApiAction(
       "shared_excelonlinebusiness",
       "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
-      "RunScript",
-      excelParams,
+      "GetItems",
+      parameters,
+      runAfter,
+    ),
+  };
+}
+
+function buildCsvTableAction(runAfter: Record<string, string[]>) {
+  return {
+    [CSV_TABLE_KEY]: builtInAction(
+      "Table",
+      {
+        from: `@body('${LIST_ROWS_KEY}')?['value']`,
+        format: "CSV",
+      },
       runAfter,
     ),
   };
@@ -147,11 +171,12 @@ function buildBoxSourceProcessing(config: FlowConfig, csvPrefix: string) {
       },
       { Get_Excel_from_Box: ["Succeeded"] },
     ),
-    ...buildSheetToCsvAction(config, "onedrive", {
+    ...buildListRowsAction(config, "onedrive", {
       Save_to_OneDrive_for_processing: ["Succeeded"],
     }),
+    ...buildCsvTableAction({ [LIST_ROWS_KEY]: ["Succeeded"] }),
     ...buildCsvUploadAction(config, csvPrefix, {
-      Convert_sheet_to_CSV: ["Succeeded"],
+      [CSV_TABLE_KEY]: ["Succeeded"],
     }),
     Delete_OneDrive_temp_file: openApiAction(
       "shared_onedriveforbusiness",
@@ -167,9 +192,10 @@ function buildBoxSourceProcessing(config: FlowConfig, csvPrefix: string) {
 
 function buildSharePointSourceProcessing(config: FlowConfig, csvPrefix: string) {
   return {
-    ...buildSheetToCsvAction(config, "sharepoint", {}),
+    ...buildListRowsAction(config, "sharepoint", {}),
+    ...buildCsvTableAction({ [LIST_ROWS_KEY]: ["Succeeded"] }),
     ...buildCsvUploadAction(config, csvPrefix, {
-      Convert_sheet_to_CSV: ["Succeeded"],
+      [CSV_TABLE_KEY]: ["Succeeded"],
     }),
   };
 }

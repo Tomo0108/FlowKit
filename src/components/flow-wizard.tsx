@@ -602,14 +602,14 @@ export function FlowWizard({
 
           {step.id === "sheet" && (
             <Field
-              label="コピーするシート名"
+              label="対象テーブル名"
               htmlFor="sheetName"
-              help="CSV に変換する Excel シートの名前です。シート見出しと完全に一致させてください。"
+              help="CSV に変換する Excel テーブルの名前です。対象シートはテーブルとして定義し、テーブル名と完全に一致させてください。"
               error={fieldError("sheetName")}
             >
               <Input
                 id="sheetName"
-                placeholder="Sheet1"
+                placeholder="Table1"
                 {...form.register("sheetName")}
               />
             </Field>

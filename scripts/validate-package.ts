@@ -26,6 +26,34 @@ async function readZipJson(
   return asRecord(JSON.parse(await file.async("string")), filePath);
 }
 
+function collectOpenApiOperations(
+  workflow: JsonRecord,
+): Array<{ name: string; operationId: string }> {
+  const results: Array<{ name: string; operationId: string }> = [];
+
+  const visit = (operations: unknown) => {
+    if (!operations || typeof operations !== "object") return;
+    for (const [name, raw] of Object.entries(operations as JsonRecord)) {
+      if (!raw || typeof raw !== "object") continue;
+      const node = raw as JsonRecord;
+      if (node.type === "OpenApiConnection") {
+        const inputs = node.inputs as JsonRecord | undefined;
+        const host = inputs?.host as JsonRecord | undefined;
+        if (host && typeof host.operationId === "string") {
+          results.push({ name, operationId: host.operationId });
+        }
+      }
+      visit(node.actions);
+      const elseBranch = node.else as JsonRecord | undefined;
+      if (elseBranch) visit(elseBranch.actions);
+    }
+  };
+
+  visit(workflow.triggers);
+  visit(workflow.actions);
+  return results;
+}
+
 async function validatePackage(zip: JSZip, label: string) {
   const rootManifest = await readZipJson(zip, "manifest.json");
   const innerManifest = await readZipJson(
@@ -99,6 +127,21 @@ async function validatePackage(zip: JSZip, label: string) {
 
   const workflow = asRecord(properties.definition, `${label}: workflow definition`);
   assert(workflow.metadata, `${label}: workflow metadata is required`);
+
+  const allowedOperationIds = new Set([
+    "ListFolderItemsById",
+    "GetFileContent",
+    "CreateFile",
+    "DeleteFile",
+    "ListFolder",
+    "GetItems",
+  ]);
+  for (const { name, operationId } of collectOpenApiOperations(workflow)) {
+    assert(
+      allowedOperationIds.has(operationId),
+      `${label}: action '${name}' uses unknown operationId '${operationId}'`,
+    );
+  }
 
   const connectionReferences = asRecord(
     properties.connectionReferences,
