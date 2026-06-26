@@ -43,7 +43,7 @@ export function HelpContent() {
       <section>
         <Eyebrow>概要</Eyebrow>
         <p className="mt-2 text-sm leading-relaxed text-foreground/75">
-          Box / SharePoint の Excel から指定シートを CSV 化し、別の Box
+          Box / SharePoint の Excel テーブルを CSV 化し、別の Box
           フォルダへ定期出力する Power Automate フローを作成し、インポート可能な
           zip として出力します。
         </p>

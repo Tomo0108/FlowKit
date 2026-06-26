@@ -67,9 +67,9 @@ const STEPS: { id: StepId; label: string; title: string; subtitle: string }[] = 
   },
   {
     id: "sheet",
-    label: "シート",
-    title: "対象シート",
-    subtitle: "CSV 化する Excel シートを指定します",
+    label: "テーブル",
+    title: "対象テーブル",
+    subtitle: "CSV 化する Excel テーブルを指定します",
   },
   {
     id: "output",
@@ -260,7 +260,7 @@ const reviewSteps = [
   { icon: Box, label: "ソースから Excel を取得", schedule: false },
   {
     icon: FileSpreadsheet,
-    label: "指定シートをコピーして CSV 化",
+    label: "指定テーブルを CSV 化",
     schedule: false,
   },
   { icon: FileText, label: "CSV を Box フォルダへ配置", schedule: false },

@@ -91,7 +91,7 @@ const viewLayer = (offset: number, compact: boolean) => ({
 const viewHeadings: Record<AppView, { title: string; subtitle: string }> = {
   create: {
     title: "フローを作成",
-    subtitle: "Box / SharePoint の Excel シートを CSV 化して定期出力",
+    subtitle: "Box / SharePoint の Excel テーブルを CSV 化して定期出力",
   },
   saved: {
     title: "保存済みフロー",
