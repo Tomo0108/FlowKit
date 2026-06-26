@@ -51,12 +51,17 @@
   --secondary: oklch(0.97 0.003 270);
   --secondary-foreground: oklch(0.25 0.015 270);
   --muted: oklch(0.968 0.004 270);
-  --muted-foreground: oklch(0.52 0.012 270);
+  /* tuned to ~4.6:1 on --background for WCAG AA on small text */
+  --muted-foreground: oklch(0.48 0.012 270);
   --accent: oklch(0.968 0.004 270);
   --accent-foreground: oklch(0.25 0.015 270);
   --destructive: oklch(0.58 0.2 25);
   --border: oklch(0.922 0.005 270);
   --input: oklch(0.922 0.005 270);
+
+  /* focus indicator (shared by custom controls) */
+  --focus-width: 2px;
+  --focus-offset: 2px;
 
   /* brand (switchable accent) — defaults to violet, overridden at runtime */
   --brand: oklch(0.57 0.14 285);
@@ -99,8 +104,22 @@ body {
 
 /* Lighter example (placeholder) text */
 input::placeholder {
-  color: oklch(0.74 0.008 270);
+  color: oklch(0.62 0.01 270);
   opacity: 1;
+}
+
+/* ---------- Shared focus indicator ----------
+   Applied to custom (non-native) interactive controls so keyboard
+   users get a consistent, visible focus ring. Native controls keep
+   their own focus-visible treatment defined alongside them. */
+.segment-item:focus-visible,
+.preset-chip:focus-visible,
+.step-btn:focus-visible,
+.step-bubble:focus-visible:not(:disabled),
+.nav-link:focus-visible,
+.help-dot:focus-visible {
+  outline: var(--focus-width) solid var(--brand);
+  outline-offset: var(--focus-offset);
 }
 
 /* ---------- App background ---------- */
@@ -145,7 +164,7 @@ input::placeholder {
   backdrop-filter: blur(16px) saturate(1.1);
 }
 
-.surface-quiet {
+.surface-solid {
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
   background: var(--card);
@@ -318,8 +337,9 @@ input::placeholder {
 .help-dot {
   display: grid;
   place-items: center;
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: -0.225rem;
   border-radius: 999px;
   color: var(--muted-foreground);
   transition: color 0.2s ease, background 0.2s ease;

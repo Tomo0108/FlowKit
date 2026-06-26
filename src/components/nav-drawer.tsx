@@ -84,7 +84,7 @@ export function NavDrawer({
                   type="button"
                   onClick={() => handleNavigate(item.id)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)]",
                     currentView === item.id
                       ? "bg-[var(--brand-soft)] font-medium text-[var(--brand)]"
                       : "text-foreground/70 hover:bg-muted hover:text-foreground",
@@ -99,7 +99,7 @@ export function NavDrawer({
           <li>
             <SettingsButton
               onOpen={onClose}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)]"
               iconClassName="h-4 w-4"
             >
               設定

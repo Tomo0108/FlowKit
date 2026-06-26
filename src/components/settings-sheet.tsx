@@ -42,7 +42,7 @@ function Switch({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200",
+        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-card",
         checked ? "bg-[var(--brand)]" : "bg-muted-foreground/25",
       )}
     >
@@ -147,7 +147,7 @@ export function SettingsButton({
                     onClick={() => setAccent(item.id)}
                     aria-label={item.label}
                     className={cn(
-                      "flex h-9 items-center justify-center rounded-lg border transition-all",
+                      "flex h-9 items-center justify-center rounded-lg border transition-all outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-card",
                       active
                         ? "border-foreground/20 shadow-sm"
                         : "border-transparent hover:border-border",
@@ -200,7 +200,7 @@ export function SettingsButton({
                     type="button"
                     onClick={() => setFontFamily(f.value)}
                     className={cn(
-                      "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-all",
+                      "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)]",
                       active
                         ? "border-[var(--brand-ring)] bg-[var(--brand-softer)]"
                         : "border-border bg-card hover:border-[var(--brand-ring)]",
@@ -265,9 +265,10 @@ export function SettingsButton({
         }}
         aria-label="設定を開く"
         className={cn(
+          "outline-none",
           hasLabel
-            ? "inline-flex items-center gap-2 text-sm transition-colors"
-            : "flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground transition-colors hover:text-foreground",
+            ? "inline-flex items-center gap-2 text-sm transition-colors focus-visible:text-foreground"
+            : "flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)]",
           className,
         )}
       >
