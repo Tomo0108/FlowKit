@@ -28,7 +28,10 @@ async function readZipJson(
 
 async function validatePackage(zip: JSZip, label: string) {
   const rootManifest = await readZipJson(zip, "manifest.json");
-  const innerManifest = await readZipJson(zip, "Microsoft.Flow/manifest.json");
+  const innerManifest = await readZipJson(
+    zip,
+    "Microsoft.Flow/flows/manifest.json",
+  );
 
   assert(rootManifest.schema === "1.0", `${label}: root schema must be 1.0`);
   assert(
@@ -196,7 +199,7 @@ async function validateReferenceSample() {
   const zip = new JSZip();
   zip.file("manifest.json", manifestRaw);
   zip.file(
-    "Microsoft.Flow/manifest.json",
+    "Microsoft.Flow/flows/manifest.json",
     await readFile(path.join(baseDir, "Microsoft.Flow/flows/manifest.json"), "utf8"),
   );
   zip.file(

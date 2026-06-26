@@ -42,7 +42,7 @@ export async function generateFlowPackage(config: FlowConfig): Promise<{
     JSON.stringify(buildConnectionsMap(resourceIds), null, 2),
   );
 
-  zip.folder("Microsoft.Flow")!.file(
+  zip.folder("Microsoft.Flow/flows")!.file(
     "manifest.json",
     JSON.stringify(buildInnerManifest(assetId), null, 2),
   );
