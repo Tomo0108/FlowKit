@@ -42,7 +42,7 @@ import {
   FREQUENCY_OPTIONS,
   WEEKDAYS,
 } from "@/lib/schedule";
-import { useCompactMotion } from "@/lib/use-compact-motion";
+import { useMotionPreference } from "@/lib/use-compact-motion";
 import { downloadBlob } from "@/lib/utils";
 import {
   defaultFlowConfig,
@@ -279,7 +279,7 @@ export function FlowWizard({
   const [isExporting, setIsExporting] = useState(false);
   const [exportedFile, setExportedFile] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
-  const compactMotion = useCompactMotion();
+  const { animationsEnabled, compactViewport } = useMotionPreference();
 
   const form = useForm<FlowConfig>({
     resolver: zodResolver(flowConfigSchema),
@@ -397,9 +397,9 @@ export function FlowWizard({
     duration: 0.18,
     ease: [0.22, 1, 0.36, 1] as const,
   };
-  const headerOffset = compactMotion ? 8 : 18;
-  const contentEnterOffset = compactMotion ? 12 : 48;
-  const contentExitOffset = compactMotion ? 10 : 36;
+  const headerOffset = compactViewport ? 8 : 18;
+  const contentEnterOffset = compactViewport ? 12 : 48;
+  const contentExitOffset = compactViewport ? 10 : 36;
 
   const headerVariants = {
     initial: (dir: "next" | "back") => ({
@@ -409,12 +409,12 @@ export function FlowWizard({
     animate: {
       opacity: 1,
       x: 0,
-      transition: compactMotion ? compactTransition : spring,
+      transition: compactViewport ? compactTransition : spring,
     },
     exit: (dir: "next" | "back") => ({
       opacity: 0,
       x: dir === "next" ? -headerOffset : headerOffset,
-      transition: compactMotion
+      transition: compactViewport
         ? { duration: 0.14, ease: [0.4, 0, 1, 1] as const }
         : { duration: 0.2, ease: [0.4, 0, 1, 1] as const },
     }),
@@ -424,23 +424,46 @@ export function FlowWizard({
     initial: (dir: "next" | "back") => ({
       opacity: 0,
       x: dir === "next" ? contentEnterOffset : -contentEnterOffset,
-      filter: compactMotion ? "none" : "blur(4px)",
+      filter: compactViewport ? "none" : "blur(4px)",
     }),
     animate: {
       opacity: 1,
       x: 0,
       filter: "none",
-      transition: compactMotion ? compactTransition : spring,
+      transition: compactViewport ? compactTransition : spring,
     },
     exit: (dir: "next" | "back") => ({
       opacity: 0,
       x: dir === "next" ? -contentExitOffset : contentExitOffset,
-      filter: compactMotion ? "none" : "blur(4px)",
-      transition: compactMotion
+      filter: compactViewport ? "none" : "blur(4px)",
+      transition: compactViewport
         ? { duration: 0.14, ease: [0.4, 0, 1, 1] as const }
         : { duration: 0.22, ease: [0.4, 0, 1, 1] as const },
     }),
   };
+
+  const staticVariants = {
+    initial: { opacity: 1, x: 0, y: 0, scale: 1, filter: "none" },
+    animate: {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      scale: 1,
+      filter: "none",
+      transition: { duration: 0 },
+    },
+    exit: {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      scale: 1,
+      filter: "none",
+      transition: { duration: 0 },
+    },
+  };
+
+  const activeHeaderVariants = animationsEnabled ? headerVariants : staticVariants;
+  const activeContentVariants = animationsEnabled ? contentVariants : staticVariants;
 
   return (
     <div className="space-y-7">
@@ -493,12 +516,12 @@ export function FlowWizard({
           <motion.header
             key={step.id}
             custom={direction}
-            variants={headerVariants}
+            variants={activeHeaderVariants}
             initial="initial"
             animate="animate"
             exit="exit"
             className="mb-6"
-            data-compact-motion={compactMotion ? "true" : undefined}
+            data-compact-motion={compactViewport ? "true" : undefined}
           >
             <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">
               Step {stepIndex + 1} / {STEPS.length}
@@ -514,11 +537,11 @@ export function FlowWizard({
           <motion.div
             key={step.id}
             custom={direction}
-            variants={contentVariants}
+            variants={activeContentVariants}
             initial="initial"
             animate="animate"
             exit="exit"
-            data-compact-motion={compactMotion ? "true" : undefined}
+            data-compact-motion={compactViewport ? "true" : undefined}
           >
           {step.id === "source" && (
             <div className="space-y-6">

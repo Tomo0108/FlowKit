@@ -8,7 +8,7 @@ import { SavedFlowsView } from "@/components/saved-flows-view";
 import { HeaderBar, NavDrawer, type AppView } from "@/components/nav-drawer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Surface } from "@/components/ui/surface";
-import { useCompactMotion } from "@/lib/use-compact-motion";
+import { useMotionPreference } from "@/lib/use-compact-motion";
 import type { FlowConfig } from "@/lib/validators";
 
 const compactTransition = {
@@ -109,7 +109,7 @@ function Shell() {
   const [navOpen, setNavOpen] = useState(false);
   const [loadedConfig, setLoadedConfig] = useState<FlowConfig | undefined>();
   const [wizardKey, setWizardKey] = useState(0);
-  const compactMotion = useCompactMotion();
+  const { animationsEnabled, compactViewport } = useMotionPreference();
 
   const heading = viewHeadings[view];
 
@@ -138,6 +138,33 @@ function Shell() {
     else setDirectedView(next);
   }
 
+  const viewContent = (
+    <>
+      <header className="mb-9">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+          {heading.title}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {heading.subtitle}
+        </p>
+      </header>
+
+      <div>
+        {view === "create" && (
+          <FlowWizard key={wizardKey} initialConfig={loadedConfig} />
+        )}
+
+        {view === "saved" && <SavedFlowsView onLoad={loadFlow} />}
+
+        {view === "help" && (
+          <Surface>
+            <HelpContent />
+          </Surface>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="app-bg">
       <HeaderBar
@@ -153,52 +180,56 @@ function Shell() {
       />
 
       <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-        <AnimatePresence
-          mode="wait"
-          initial={false}
-          custom={transitionDirection}
-        >
-          <motion.div
-            key={view}
-            variants={viewContainer(compactMotion)}
+        {animationsEnabled ? (
+          <AnimatePresence
+            mode="wait"
+            initial={false}
             custom={transitionDirection}
-            initial="initial"
-            animate="animate"
-            exit="exit"
           >
-            <motion.header
-              variants={viewLayer(26, compactMotion)}
-              custom={transitionDirection}
-              className="mb-9"
-              data-compact-motion={compactMotion ? "true" : undefined}
-            >
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
-                {heading.title}
-              </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {heading.subtitle}
-              </p>
-            </motion.header>
-
             <motion.div
-              variants={viewLayer(14, compactMotion)}
+              key={view}
+              variants={viewContainer(compactViewport)}
               custom={transitionDirection}
-              data-compact-motion={compactMotion ? "true" : undefined}
+              initial="initial"
+              animate="animate"
+              exit="exit"
             >
-              {view === "create" && (
-                <FlowWizard key={wizardKey} initialConfig={loadedConfig} />
-              )}
+              <motion.header
+                variants={viewLayer(26, compactViewport)}
+                custom={transitionDirection}
+                className="mb-9"
+                data-compact-motion={compactViewport ? "true" : undefined}
+              >
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
+                  {heading.title}
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {heading.subtitle}
+                </p>
+              </motion.header>
 
-              {view === "saved" && <SavedFlowsView onLoad={loadFlow} />}
+              <motion.div
+                variants={viewLayer(14, compactViewport)}
+                custom={transitionDirection}
+                data-compact-motion={compactViewport ? "true" : undefined}
+              >
+                {view === "create" && (
+                  <FlowWizard key={wizardKey} initialConfig={loadedConfig} />
+                )}
 
-              {view === "help" && (
-                <Surface>
-                  <HelpContent />
-                </Surface>
-              )}
+                {view === "saved" && <SavedFlowsView onLoad={loadFlow} />}
+
+                {view === "help" && (
+                  <Surface>
+                    <HelpContent />
+                  </Surface>
+                )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </AnimatePresence>
+          </AnimatePresence>
+        ) : (
+          <div key={view}>{viewContent}</div>
+        )}
       </main>
     </div>
   );

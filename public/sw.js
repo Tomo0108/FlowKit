@@ -1,9 +1,10 @@
-const CACHE = "flowkit-v2";
+const CACHE = "flowkit-v3";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-maskable.svg",
+  "/apple-icon.svg",
 ];
 
 self.addEventListener("install", (event) => {

@@ -631,6 +631,23 @@ input::placeholder {
 [data-animations="off"] .animate-slide-next,
 [data-animations="off"] .animate-slide-back {
   animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+[data-animations="off"] .step-bubble,
+[data-animations="off"] .step-line,
+[data-animations="off"] .step-caption {
+  transition: none !important;
+}
+
+[data-animations="off"] .step-bubble[data-state="active"] {
+  transform: none !important;
+}
+
+[data-animations="off"] .help-popover.animate-fade-up {
+  animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

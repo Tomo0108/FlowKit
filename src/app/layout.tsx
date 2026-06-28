@@ -55,8 +55,8 @@ export const metadata: Metadata = {
     title: "FlowKit",
   },
   icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
   },
 };
 
@@ -74,6 +74,7 @@ export default function RootLayout({
   return (
     <html
       lang="ja"
+      data-animations="on"
       className={`${inter.variable} ${zenKaku.variable} ${notoSansJP.variable} ${zenMaru.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-screen font-sans antialiased">

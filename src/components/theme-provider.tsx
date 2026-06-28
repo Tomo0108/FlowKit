@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
 } from "react";
 import { MotionConfig } from "motion/react";
@@ -76,6 +77,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [fontScale, setFontScaleState] = useState<FontScale>("md");
   const [fontFamily, setFontFamilyState] = useState<FontFamily>("zenKaku");
 
+  useLayoutEffect(() => {
+    const savedAnimations = window.localStorage.getItem(KEYS.animations);
+    if (savedAnimations !== null) {
+      const on = savedAnimations === "true";
+      setAnimationsState(on);
+      applyAnimations(on);
+    } else {
+      applyAnimations(true);
+    }
+  }, []);
+
   useEffect(() => {
     const savedAccent = window.localStorage.getItem(
       accentStorageKey,
@@ -83,13 +95,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (savedAccent) {
       setAccentState(savedAccent);
       applyAccent(savedAccent);
-    }
-
-    const savedAnimations = window.localStorage.getItem(KEYS.animations);
-    if (savedAnimations !== null) {
-      const on = savedAnimations === "true";
-      setAnimationsState(on);
-      applyAnimations(on);
     }
 
     const savedScale = window.localStorage.getItem(
