@@ -665,20 +665,18 @@ export function FlowWizard({
                   {...form.register("csvFileNamePrefix")}
                 />
               </Field>
-              {values.dataSourceType === "box" && (
-                <Field
-                  label="OneDrive 一時フォルダ"
-                  htmlFor="oneDriveTempFolder"
-                  help="Box ソース時に Excel を一時処理するための OneDrive フォルダです。"
-                >
-                  <Input
-                    id="oneDriveTempFolder"
-                    className="mono"
-                    placeholder="/FlowKit/temp"
-                    {...form.register("oneDriveTempFolder")}
-                  />
-                </Field>
-              )}
+              <Field
+                label="OneDrive 一時フォルダ"
+                htmlFor="oneDriveTempFolder"
+                help="Box / SharePoint の Excel を CSV 化する際に一時的に保存する OneDrive フォルダです。処理後に自動削除されます。"
+              >
+                <Input
+                  id="oneDriveTempFolder"
+                  className="mono"
+                  placeholder="/FlowKit/temp"
+                  {...form.register("oneDriveTempFolder")}
+                />
+              </Field>
               <Field
                 label="Power Automate フロー名"
                 htmlFor="flowName"

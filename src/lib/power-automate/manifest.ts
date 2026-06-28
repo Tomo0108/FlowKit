@@ -68,11 +68,8 @@ function getConnectorNames(config: FlowConfig): ConnectorName[] {
   const connectorNames: ConnectorName[] = [
     "shared_box",
     "shared_excelonlinebusiness",
+    "shared_onedriveforbusiness",
   ];
-
-  if (config.dataSourceType === "box") {
-    connectorNames.push("shared_onedriveforbusiness");
-  }
 
   if (config.dataSourceType === "sharepoint") {
     connectorNames.push("shared_sharepointonline");

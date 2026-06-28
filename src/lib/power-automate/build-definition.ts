@@ -107,31 +107,19 @@ function buildCsvUploadAction(config: FlowConfig, csvPrefix: string, runAfter: R
 
 function buildListRowsAction(
   config: FlowConfig,
-  excelSource: "onedrive" | "sharepoint",
   runAfter: Record<string, string[]>,
 ) {
-  const table = config.sheetName.trim();
-  const parameters =
-    excelSource === "onedrive"
-      ? {
-          source: "me",
-          drive: "me",
-          file: "@outputs('Save_to_OneDrive_for_processing')?['body/Id']",
-          table,
-        }
-      : {
-          source: config.sourceSharePointSiteUrl!.trim(),
-          drive: config.sourceSharePointSiteUrl!.trim(),
-          file: "@items('Apply_to_each_file')?['Id']",
-          table,
-        };
-
   return {
     [LIST_ROWS_KEY]: openApiAction(
       "shared_excelonlinebusiness",
       "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
       "GetItems",
-      parameters,
+      {
+        source: "me",
+        drive: "me",
+        file: "@outputs('Save_to_OneDrive_for_processing')?['body/Id']",
+        table: config.sheetName.trim(),
+      },
       runAfter,
     ),
   };
@@ -150,28 +138,26 @@ function buildCsvTableAction(runAfter: Record<string, string[]>) {
   };
 }
 
-function buildBoxSourceProcessing(config: FlowConfig, csvPrefix: string) {
+function buildOneDriveProcessing(
+  config: FlowConfig,
+  csvPrefix: string,
+  options: { fetchKey: string; fileNameExpression: string },
+) {
   const tempFolder = config.oneDriveTempFolder?.trim() || "/FlowKit/temp";
 
   return {
-    Get_Excel_from_Box: openApiAction(
-      "shared_box",
-      "/providers/Microsoft.PowerApps/apis/shared_box",
-      "GetFileContent",
-      { id: "@items('Apply_to_each_file')?['id']" },
-    ),
     Save_to_OneDrive_for_processing: openApiAction(
       "shared_onedriveforbusiness",
       "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
       "CreateFile",
       {
         folderPath: tempFolder,
-        name: "@items('Apply_to_each_file')?['name']",
-        fileContent: "@body('Get_Excel_from_Box')",
+        name: `@${options.fileNameExpression}`,
+        fileContent: `@body('${options.fetchKey}')`,
       },
-      { Get_Excel_from_Box: ["Succeeded"] },
+      { [options.fetchKey]: ["Succeeded"] },
     ),
-    ...buildListRowsAction(config, "onedrive", {
+    ...buildListRowsAction(config, {
       Save_to_OneDrive_for_processing: ["Succeeded"],
     }),
     ...buildCsvTableAction({ [LIST_ROWS_KEY]: ["Succeeded"] }),
@@ -190,12 +176,35 @@ function buildBoxSourceProcessing(config: FlowConfig, csvPrefix: string) {
   };
 }
 
+function buildBoxSourceProcessing(config: FlowConfig, csvPrefix: string) {
+  return {
+    Get_Excel_from_Box: openApiAction(
+      "shared_box",
+      "/providers/Microsoft.PowerApps/apis/shared_box",
+      "GetFileContent",
+      { id: "@items('Apply_to_each_file')?['id']" },
+    ),
+    ...buildOneDriveProcessing(config, csvPrefix, {
+      fetchKey: "Get_Excel_from_Box",
+      fileNameExpression: "items('Apply_to_each_file')?['name']",
+    }),
+  };
+}
+
 function buildSharePointSourceProcessing(config: FlowConfig, csvPrefix: string) {
   return {
-    ...buildListRowsAction(config, "sharepoint", {}),
-    ...buildCsvTableAction({ [LIST_ROWS_KEY]: ["Succeeded"] }),
-    ...buildCsvUploadAction(config, csvPrefix, {
-      [CSV_TABLE_KEY]: ["Succeeded"],
+    Get_Excel_from_SharePoint: openApiAction(
+      "shared_sharepointonline",
+      "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+      "GetFileContent",
+      {
+        dataset: config.sourceSharePointSiteUrl!.trim(),
+        id: "@items('Apply_to_each_file')?['Id']",
+      },
+    ),
+    ...buildOneDriveProcessing(config, csvPrefix, {
+      fetchKey: "Get_Excel_from_SharePoint",
+      fileNameExpression: "items('Apply_to_each_file')?['Name']",
     }),
   };
 }
