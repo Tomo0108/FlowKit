@@ -21,9 +21,9 @@ export const flowConfigSchema = z
       .string()
       .min(1, "コピーするシート名を入力してください")
       .max(100, "シート名は100文字以内にしてください"),
-    destinationBoxFolderId: z
+    destinationBoxFolderPath: z
       .string()
-      .min(1, "CSV 出力先の Box フォルダ ID を入力してください"),
+      .min(1, "CSV 出力先の Box フォルダパスを入力してください"),
     csvFileNamePrefix: z.string().max(50).optional(),
     oneDriveTempFolder: z.string().max(200).optional(),
     scheduleFrequency: z.enum(scheduleFrequencies),
@@ -88,7 +88,7 @@ export const defaultFlowConfig: FlowConfig = {
   sourceSharePointSiteUrl: "",
   sourceSharePointFolderPath: "",
   sheetName: "",
-  destinationBoxFolderId: "",
+  destinationBoxFolderPath: "",
   csvFileNamePrefix: "export",
   oneDriveTempFolder: "/FlowKit/temp",
   scheduleFrequency: "day",

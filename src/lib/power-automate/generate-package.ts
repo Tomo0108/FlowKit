@@ -78,7 +78,7 @@ export function summarizeFlow(config: FlowConfig): string[] {
 
   lines.push(
     `シート: ${config.sheetName}`,
-    `出力先: Box フォルダ ${config.destinationBoxFolderId}`,
+    `出力先: Box フォルダ ${config.destinationBoxFolderPath}`,
     `実行: ${scheduleText} (${config.timeZone})`,
   );
 

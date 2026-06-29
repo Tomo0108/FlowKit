@@ -129,7 +129,6 @@ async function validatePackage(zip: JSZip, label: string) {
   assert(workflow.metadata, `${label}: workflow metadata is required`);
 
   const allowedOperationIds = new Set([
-    "ListFolderItemsById",
     "GetFileContent",
     "CreateFile",
     "DeleteFile",
@@ -276,7 +275,7 @@ async function main() {
     flowName: "Box Import Test",
     sourceBoxFolderId: "1234567890",
     sheetName: "Sheet1",
-    destinationBoxFolderId: "9876543210",
+    destinationBoxFolderPath: "/Reports",
   };
   const sharePointConfig = {
     ...defaultFlowConfig,
@@ -285,7 +284,7 @@ async function main() {
     sourceSharePointSiteUrl: "https://contoso.sharepoint.com/sites/example",
     sourceSharePointFolderPath: "Shared Documents/Reports",
     sheetName: "Sheet1",
-    destinationBoxFolderId: "9876543210",
+    destinationBoxFolderPath: "/Reports",
   };
 
   for (const config of [boxConfig, sharePointConfig]) {

@@ -96,9 +96,9 @@ function buildCsvUploadAction(config: FlowConfig, csvPrefix: string, runAfter: R
       "/providers/Microsoft.PowerApps/apis/shared_box",
       "CreateFile",
       {
-        folderId: config.destinationBoxFolderId.trim(),
-        name: `@concat('${csvPrefix}_', ${config.dataSourceType === "box" ? "items('Apply_to_each_file')?['name']" : "items('Apply_to_each_file')?['Name']"}, '_', '${config.sheetName.trim()}', '_', formatDateTime(utcNow(), 'yyyyMMdd_HHmmss'), '.csv')`,
-        content: `@body('${CSV_TABLE_KEY}')`,
+        folderPath: config.destinationBoxFolderPath.trim(),
+        name: `@concat('${csvPrefix}_', items('Apply_to_each_file')?['Name'], '_', '${config.sheetName.trim()}', '_', formatDateTime(utcNow(), 'yyyyMMdd_HHmmss'), '.csv')`,
+        body: `@body('${CSV_TABLE_KEY}')`,
       },
       runAfter,
     ),
@@ -116,8 +116,9 @@ function buildListRowsAction(
       "GetItems",
       {
         source: "me",
-        drive: "me",
-        file: "@outputs('Save_to_OneDrive_for_processing')?['body/Id']",
+        drive:
+          "@first(split(outputs('Save_to_OneDrive_for_processing')?['body/Id'], '.'))",
+        file: "@last(split(outputs('Save_to_OneDrive_for_processing')?['body/Id'], '.'))",
         table: config.sheetName.trim(),
       },
       runAfter,
@@ -153,7 +154,7 @@ function buildOneDriveProcessing(
       {
         folderPath: tempFolder,
         name: `@${options.fileNameExpression}`,
-        fileContent: `@body('${options.fetchKey}')`,
+        body: `@body('${options.fetchKey}')`,
       },
       { [options.fetchKey]: ["Succeeded"] },
     ),
@@ -182,11 +183,11 @@ function buildBoxSourceProcessing(config: FlowConfig, csvPrefix: string) {
       "shared_box",
       "/providers/Microsoft.PowerApps/apis/shared_box",
       "GetFileContent",
-      { id: "@items('Apply_to_each_file')?['id']" },
+      { id: "@items('Apply_to_each_file')?['Id']" },
     ),
     ...buildOneDriveProcessing(config, csvPrefix, {
       fetchKey: "Get_Excel_from_Box",
-      fileNameExpression: "items('Apply_to_each_file')?['name']",
+      fileNameExpression: "items('Apply_to_each_file')?['Name']",
     }),
   };
 }
@@ -212,21 +213,23 @@ function buildSharePointSourceProcessing(config: FlowConfig, csvPrefix: string) 
 export function buildWorkflowDefinition(config: FlowConfig) {
   const isBox = config.dataSourceType === "box";
   const csvPrefix = config.csvFileNamePrefix?.trim() || "export";
-  const fileNameExpr = isBox
-    ? "items('Apply_to_each_file')?['name']"
-    : "items('Apply_to_each_file')?['Name']";
+  const fileNameExpr = "items('Apply_to_each_file')?['Name']";
+
+  const listActionKey = isBox
+    ? "List_Excel_files_in_Box_folder"
+    : "List_Excel_files_in_SharePoint_folder";
 
   const listSourceAction = isBox
     ? {
-        List_Excel_files_in_Box_folder: openApiAction(
+        [listActionKey]: openApiAction(
           "shared_box",
           "/providers/Microsoft.PowerApps/apis/shared_box",
-          "ListFolderItemsById",
+          "ListFolder",
           { id: config.sourceBoxFolderId!.trim() },
         ),
       }
     : {
-        List_Excel_files_in_SharePoint_folder: openApiAction(
+        [listActionKey]: openApiAction(
           "shared_sharepointonline",
           "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
           "ListFolder",
@@ -237,13 +240,7 @@ export function buildWorkflowDefinition(config: FlowConfig) {
         ),
       };
 
-  const listActionKey = isBox
-    ? "List_Excel_files_in_Box_folder"
-    : "List_Excel_files_in_SharePoint_folder";
-
-  const foreachExpression = isBox
-    ? "@outputs('List_Excel_files_in_Box_folder')?['body/entries']"
-    : "@outputs('List_Excel_files_in_SharePoint_folder')?['body/value']";
+  const foreachExpression = `@outputs('${listActionKey}')?['body/value']`;
 
   return {
     metadata: {
