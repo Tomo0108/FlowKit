@@ -96,7 +96,7 @@ function buildCsvUploadAction(config: FlowConfig, csvPrefix: string, runAfter: R
       "/providers/Microsoft.PowerApps/apis/shared_box",
       "CreateFile",
       {
-        folderPath: config.destinationBoxFolderPath.trim(),
+        folderPath: config.destinationBoxFolderId.trim(),
         name: `@concat('${csvPrefix}_', items('Apply_to_each_file')?['Name'], '_', '${config.sheetName.trim()}', '_', formatDateTime(utcNow(), 'yyyyMMdd_HHmmss'), '.csv')`,
         body: `@body('${CSV_TABLE_KEY}')`,
       },

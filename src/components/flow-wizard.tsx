@@ -117,7 +117,7 @@ function fieldsForStep(
     case "sheet":
       return ["sheetName"];
     case "output":
-      return ["destinationBoxFolderPath", "flowName"];
+      return ["destinationBoxFolderId", "flowName"];
     case "schedule":
       return frequency === "week"
         ? ["scheduleWeekdays", "scheduleHour", "scheduleMinute", "timeZone"]
@@ -641,16 +641,16 @@ export function FlowWizard({
           {step.id === "output" && (
             <div className="space-y-6">
               <Field
-                label="CSV 出力先 Box フォルダパス"
-                htmlFor="destinationBoxFolderPath"
-                help="生成した CSV を配置する Box フォルダのパスです。ルートからのパスで指定します。例: /Reports（ルート直下は / ）"
-                error={fieldError("destinationBoxFolderPath")}
+                label="CSV 出力先 Box フォルダ ID"
+                htmlFor="destinationBoxFolderId"
+                help="生成した CSV を配置する Box フォルダの ID です。フォルダを開いた際の URL 末尾の数字で確認できます。"
+                error={fieldError("destinationBoxFolderId")}
               >
                 <Input
-                  id="destinationBoxFolderPath"
+                  id="destinationBoxFolderId"
                   className="mono"
-                  placeholder="/Reports"
-                  {...form.register("destinationBoxFolderPath")}
+                  placeholder="9876543210"
+                  {...form.register("destinationBoxFolderId")}
                 />
               </Field>
               <Field

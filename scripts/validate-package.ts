@@ -275,7 +275,7 @@ async function main() {
     flowName: "Box Import Test",
     sourceBoxFolderId: "1234567890",
     sheetName: "Sheet1",
-    destinationBoxFolderPath: "/Reports",
+    destinationBoxFolderId: "9876543210",
   };
   const sharePointConfig = {
     ...defaultFlowConfig,
@@ -284,7 +284,7 @@ async function main() {
     sourceSharePointSiteUrl: "https://contoso.sharepoint.com/sites/example",
     sourceSharePointFolderPath: "Shared Documents/Reports",
     sheetName: "Sheet1",
-    destinationBoxFolderPath: "/Reports",
+    destinationBoxFolderId: "9876543210",
   };
 
   for (const config of [boxConfig, sharePointConfig]) {
