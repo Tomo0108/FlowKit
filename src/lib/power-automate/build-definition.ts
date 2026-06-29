@@ -81,6 +81,13 @@ function buildRecurrence(config: FlowConfig) {
   };
 }
 
+function encodeSharePointFileIdentifier(rawPath: string): string {
+  const trimmed = rawPath.trim().replace(/^\/+/, "").replace(/\/+$/, "");
+  const normalized = `/${trimmed}`;
+  const formEncoded = encodeURIComponent(normalized).replace(/%20/g, "+");
+  return encodeURIComponent(formEncoded);
+}
+
 function excelExtensionCondition(fileNameExpression: string) {
   return {
     or: [".xlsx", ".xlsm", ".xls"].map((ext) => ({
@@ -235,7 +242,7 @@ export function buildWorkflowDefinition(config: FlowConfig) {
           "ListFolder",
           {
             dataset: config.sourceSharePointSiteUrl!.trim(),
-            id: config.sourceSharePointFolderPath!.trim(),
+            id: encodeSharePointFileIdentifier(config.sourceSharePointFolderPath!),
           },
         ),
       };

@@ -28,8 +28,12 @@ async function readZipJson(
 
 function collectOpenApiOperations(
   workflow: JsonRecord,
-): Array<{ name: string; operationId: string }> {
-  const results: Array<{ name: string; operationId: string }> = [];
+): Array<{ name: string; operationId: string; parameters?: JsonRecord }> {
+  const results: Array<{
+    name: string;
+    operationId: string;
+    parameters?: JsonRecord;
+  }> = [];
 
   const visit = (operations: unknown) => {
     if (!operations || typeof operations !== "object") return;
@@ -40,7 +44,11 @@ function collectOpenApiOperations(
         const inputs = node.inputs as JsonRecord | undefined;
         const host = inputs?.host as JsonRecord | undefined;
         if (host && typeof host.operationId === "string") {
-          results.push({ name, operationId: host.operationId });
+          results.push({
+            name,
+            operationId: host.operationId,
+            parameters: inputs?.parameters as JsonRecord | undefined,
+          });
         }
       }
       visit(node.actions);
@@ -135,11 +143,27 @@ async function validatePackage(zip: JSZip, label: string) {
     "ListFolder",
     "GetItems",
   ]);
-  for (const { name, operationId } of collectOpenApiOperations(workflow)) {
+  for (const { name, operationId, parameters } of collectOpenApiOperations(
+    workflow,
+  )) {
     assert(
       allowedOperationIds.has(operationId),
       `${label}: action '${name}' uses unknown operationId '${operationId}'`,
     );
+
+    if (name === "List_Excel_files_in_SharePoint_folder") {
+      const id = parameters?.id;
+      assert(
+        typeof id === "string",
+        `${label}: SharePoint ListFolder must set a string id`,
+      );
+      assert(
+        !(id as string).includes(" ") &&
+          !(id as string).includes("/") &&
+          (id as string).includes("%25"),
+        `${label}: SharePoint ListFolder id must be an encoded file identifier (got '${id}')`,
+      );
+    }
   }
 
   const connectionReferences = asRecord(
