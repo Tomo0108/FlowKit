@@ -1,0 +1,19 @@
+---
+description: Git 運用ルール（push 先ブランチ）
+alwaysApply: true
+---
+
+# Git 運用ルール
+
+`language = "ja"`
+
+## push 先
+
+- 変更は **毎回 `main` ブランチへ直接 commit / push** する。
+- フィーチャーブランチの作成や PR 作成は不要（依頼されない限り行わない）。
+- 作業ブランチが `main` 以外にある場合は `main` に切り替え、変更を `main` へ反映してから push する。
+
+## 補足
+
+- コミット単位・コミットメッセージは `commit-message-format.mdc` に従う。
+- ユーザーが明示的に別ブランチや PR を指定した場合のみ、その指示を優先する。

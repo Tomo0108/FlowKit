@@ -1,0 +1,19 @@
+---
+description: Git workflow rule (push target branch)
+alwaysApply: true
+---
+
+# Git workflow rule
+
+`language = "ja"`
+
+## Push target
+
+- Always commit and push changes **directly to the `main` branch**, every time.
+- Do not create feature branches or pull requests unless explicitly requested.
+- If the working branch is not `main`, switch to `main`, apply the changes there, then push.
+
+## Notes
+
+- Follow `commit-message-format.mdc` for commit granularity and messages.
+- Only deviate when the user explicitly asks for a different branch or a PR.
